@@ -32,3 +32,41 @@
         transform: rotate(360deg);
     }
 }
+
+/* QR Scanner Styles */
+#qr-reader {
+    width: 100% !important;
+    border: none !important;
+}
+
+#qr-reader__scan_region {
+    border-radius: 1rem !important;
+    overflow: hidden;
+}
+
+#qr-reader__dashboard {
+    padding: 1rem !important;
+}
+
+#qr-reader__dashboard button {
+    background-color: #0ea5e9 !important;
+    color: white !important;
+    border: none !important;
+    padding: 0.75rem 1.5rem !important;
+    border-radius: 1rem !important;
+    font-weight: bold !important;
+    cursor: pointer !important;
+}
+
+#qr-reader__dashboard select {
+    background-color: #1e293b !important;
+    color: white !important;
+    border: 2px solid #334155 !important;
+    padding: 0.5rem !important;
+    border-radius: 0.5rem !important;
+}
+
+#qr-reader__status_span {
+    color: #94a3b8 !important;
+    font-size: 0.875rem !important;
+}
