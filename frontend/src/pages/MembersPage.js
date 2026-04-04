@@ -187,10 +187,16 @@ const MembersPage = () => {
               </h2>
               <p className="text-slate-500">{members.length} total members</p>
             </div>
-            <Link to="/members/new" className="btn-primary flex items-center gap-2 w-fit" data-testid="add-member-btn">
-              <Plus className="w-5 h-5" strokeWidth={2.5} />
-              Add Member
-            </Link>
+            <div className="flex gap-3">
+              <Link to="/members/import" className="btn-secondary flex items-center gap-2" data-testid="bulk-import-btn">
+                <Upload className="w-5 h-5" strokeWidth={2.5} />
+                Import CSV
+              </Link>
+              <Link to="/members/new" className="btn-primary flex items-center gap-2" data-testid="add-member-btn">
+                <Plus className="w-5 h-5" strokeWidth={2.5} />
+                Add Member
+              </Link>
+            </div>
           </div>
 
           {/* Search and Filter */}

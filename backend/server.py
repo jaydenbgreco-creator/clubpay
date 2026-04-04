@@ -1,7 +1,7 @@
 from dotenv import load_dotenv
 load_dotenv()
 
-from fastapi import FastAPI, APIRouter, HTTPException, Request, Response, Depends
+from fastapi import FastAPI, APIRouter, HTTPException, Request, Response, Depends, UploadFile, File
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
@@ -17,6 +17,9 @@ from bson import ObjectId
 import qrcode
 import io
 import base64
+import httpx
+import csv
+from io import StringIO
 
 ROOT_DIR = Path(__file__).parent
 
@@ -29,6 +32,7 @@ app = FastAPI()
 api_router = APIRouter(prefix="/api")
 
 JWT_ALGORITHM = "HS256"
+EMERGENT_AUTH_URL = "https://demobackend.emergentagent.com/auth/v1/env/oauth/session-data"
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -65,6 +69,22 @@ def create_refresh_token(user_id: str) -> str:
     return jwt.encode(payload, get_jwt_secret(), algorithm=JWT_ALGORITHM)
 
 async def get_current_user(request: Request) -> dict:
+    # Check session_token cookie first (Google OAuth)
+    session_token = request.cookies.get("session_token")
+    if session_token:
+        session = await db.user_sessions.find_one({"session_token": session_token}, {"_id": 0})
+        if session:
+            expires_at = session.get("expires_at")
+            if isinstance(expires_at, str):
+                expires_at = datetime.fromisoformat(expires_at)
+            if expires_at.tzinfo is None:
+                expires_at = expires_at.replace(tzinfo=timezone.utc)
+            if expires_at > datetime.now(timezone.utc):
+                user = await db.users.find_one({"user_id": session["user_id"]}, {"_id": 0})
+                if user:
+                    return user
+    
+    # Fall back to JWT access_token
     token = request.cookies.get("access_token")
     if not token:
         auth_header = request.headers.get("Authorization", "")
@@ -110,6 +130,9 @@ class UserResponse(BaseModel):
     name: str
     role: str
     member_id: Optional[str] = None
+
+class GoogleSessionRequest(BaseModel):
+    session_id: str
 
 class MemberCreate(BaseModel):
     member_id: str
@@ -165,6 +188,9 @@ class TransactionResponse(BaseModel):
 class BulkMemberImport(BaseModel):
     members: List[MemberCreate]
 
+class LinkChildRequest(BaseModel):
+    member_id: str
+
 # ----------- Auth Routes -----------
 @api_router.post("/auth/register")
 async def register(user_data: UserCreate, response: Response):
@@ -175,11 +201,13 @@ async def register(user_data: UserCreate, response: Response):
     
     hashed = hash_password(user_data.password)
     user_doc = {
+        "user_id": f"user_{uuid.uuid4().hex[:12]}",
         "email": email,
         "password_hash": hashed,
         "name": user_data.name,
         "role": user_data.role,
         "member_id": None,
+        "linked_children": [],
         "created_at": datetime.now(timezone.utc).isoformat()
     }
     result = await db.users.insert_one(user_doc)
@@ -209,7 +237,7 @@ async def login(credentials: UserLogin, request: Request, response: Response):
             await db.login_attempts.delete_one({"identifier": identifier})
     
     user = await db.users.find_one({"email": email})
-    if not user or not verify_password(credentials.password, user["password_hash"]):
+    if not user or not user.get("password_hash") or not verify_password(credentials.password, user["password_hash"]):
         # Increment failed attempts
         await db.login_attempts.update_one(
             {"identifier": identifier},
@@ -233,16 +261,107 @@ async def login(credentials: UserLogin, request: Request, response: Response):
     
     return {"id": user_id, "email": email, "name": user["name"], "role": user["role"], "member_id": user.get("member_id")}
 
+@api_router.post("/auth/google/session")
+async def google_session(data: GoogleSessionRequest, response: Response):
+    """Exchange Google OAuth session_id for session_token"""
+    try:
+        async with httpx.AsyncClient() as client_http:
+            res = await client_http.get(
+                EMERGENT_AUTH_URL,
+                headers={"X-Session-ID": data.session_id}
+            )
+            if res.status_code != 200:
+                raise HTTPException(status_code=401, detail="Invalid session ID")
+            
+            google_data = res.json()
+            email = google_data["email"].lower()
+            name = google_data.get("name", email.split("@")[0])
+            picture = google_data.get("picture", "")
+            session_token = google_data["session_token"]
+            
+            # Check if user exists
+            existing_user = await db.users.find_one({"email": email}, {"_id": 0})
+            
+            if existing_user:
+                user_id = existing_user["user_id"]
+                # Update user info
+                await db.users.update_one(
+                    {"email": email},
+                    {"$set": {"name": name, "picture": picture}}
+                )
+            else:
+                # Create new user with default role (student for Google OAuth)
+                user_id = f"user_{uuid.uuid4().hex[:12]}"
+                await db.users.insert_one({
+                    "user_id": user_id,
+                    "email": email,
+                    "name": name,
+                    "picture": picture,
+                    "role": "student",
+                    "member_id": None,
+                    "linked_children": [],
+                    "created_at": datetime.now(timezone.utc).isoformat()
+                })
+            
+            # Store session
+            expires_at = datetime.now(timezone.utc) + timedelta(days=7)
+            await db.user_sessions.update_one(
+                {"user_id": user_id},
+                {
+                    "$set": {
+                        "session_token": session_token,
+                        "expires_at": expires_at.isoformat(),
+                        "created_at": datetime.now(timezone.utc).isoformat()
+                    }
+                },
+                upsert=True
+            )
+            
+            # Set cookie
+            response.set_cookie(
+                key="session_token",
+                value=session_token,
+                httponly=True,
+                secure=True,
+                samesite="none",
+                max_age=7 * 24 * 60 * 60,
+                path="/"
+            )
+            
+            # Get full user data
+            user = await db.users.find_one({"user_id": user_id}, {"_id": 0})
+            
+            return {
+                "user_id": user_id,
+                "email": email,
+                "name": name,
+                "role": user.get("role", "student"),
+                "member_id": user.get("member_id"),
+                "linked_children": user.get("linked_children", [])
+            }
+    except httpx.RequestError as e:
+        logger.error(f"Google auth error: {e}")
+        raise HTTPException(status_code=500, detail="Authentication service unavailable")
+
 @api_router.post("/auth/logout")
 async def logout(response: Response):
     response.delete_cookie("access_token", path="/")
     response.delete_cookie("refresh_token", path="/")
+    response.delete_cookie("session_token", path="/")
     return {"message": "Logged out successfully"}
 
 @api_router.get("/auth/me")
 async def get_me(request: Request):
     user = await get_current_user(request)
-    return {"id": user["_id"], "email": user["email"], "name": user["name"], "role": user["role"], "member_id": user.get("member_id")}
+    return {
+        "id": user.get("_id") or user.get("user_id"),
+        "user_id": user.get("user_id"),
+        "email": user["email"],
+        "name": user["name"],
+        "role": user["role"],
+        "member_id": user.get("member_id"),
+        "linked_children": user.get("linked_children", [])
+    }
 
 @api_router.post("/auth/refresh")
 async def refresh_token(request: Request, response: Response):
@@ -265,6 +384,96 @@ async def refresh_token(request: Request, response: Response):
         raise HTTPException(status_code=401, detail="Refresh token expired")
     except jwt.InvalidTokenError:
         raise HTTPException(status_code=401, detail="Invalid refresh token")
+
+# ----------- Parent Routes -----------
+@api_router.post("/parent/link-child")
+async def link_child(data: LinkChildRequest, request: Request):
+    """Link a member (child) to parent account"""
+    user = await get_current_user(request)
+    if user.get("role") != "parent":
+        raise HTTPException(status_code=403, detail="Only parents can link children")
+    
+    # Check if member exists
+    member = await db.members.find_one({"member_id": data.member_id}, {"_id": 0})
+    if not member:
+        raise HTTPException(status_code=404, detail="Member not found")
+    
+    # Check if already linked
+    linked_children = user.get("linked_children", [])
+    if data.member_id in linked_children:
+        raise HTTPException(status_code=400, detail="Child already linked")
+    
+    # Update user
+    user_id = user.get("user_id") or user.get("_id")
+    if user.get("user_id"):
+        await db.users.update_one(
+            {"user_id": user_id},
+            {"$push": {"linked_children": data.member_id}}
+        )
+    else:
+        await db.users.update_one(
+            {"_id": ObjectId(user_id)},
+            {"$push": {"linked_children": data.member_id}}
+        )
+    
+    return {"message": "Child linked successfully", "member": member}
+
+@api_router.delete("/parent/unlink-child/{member_id}")
+async def unlink_child(member_id: str, request: Request):
+    """Unlink a child from parent account"""
+    user = await get_current_user(request)
+    if user.get("role") != "parent":
+        raise HTTPException(status_code=403, detail="Only parents can unlink children")
+    
+    user_id = user.get("user_id") or user.get("_id")
+    if user.get("user_id"):
+        await db.users.update_one(
+            {"user_id": user_id},
+            {"$pull": {"linked_children": member_id}}
+        )
+    else:
+        await db.users.update_one(
+            {"_id": ObjectId(user_id)},
+            {"$pull": {"linked_children": member_id}}
+        )
+    
+    return {"message": "Child unlinked successfully"}
+
+@api_router.get("/parent/children")
+async def get_children(request: Request):
+    """Get all linked children for a parent"""
+    user = await get_current_user(request)
+    if user.get("role") != "parent":
+        raise HTTPException(status_code=403, detail="Only parents can view children")
+    
+    linked_children = user.get("linked_children", [])
+    if not linked_children:
+        return []
+    
+    children = await db.members.find(
+        {"member_id": {"$in": linked_children}},
+        {"_id": 0}
+    ).to_list(100)
+    
+    return children
+
+@api_router.get("/parent/child/{member_id}/transactions")
+async def get_child_transactions(member_id: str, request: Request):
+    """Get transactions for a linked child"""
+    user = await get_current_user(request)
+    if user.get("role") != "parent":
+        raise HTTPException(status_code=403, detail="Only parents can view child transactions")
+    
+    linked_children = user.get("linked_children", [])
+    if member_id not in linked_children:
+        raise HTTPException(status_code=403, detail="Child not linked to your account")
+    
+    transactions = await db.transactions.find(
+        {"member_id": member_id},
+        {"_id": 0}
+    ).sort("created_at", -1).to_list(50)
+    
+    return transactions
 
 # ----------- Member Routes -----------
 @api_router.get("/members", response_model=List[MemberResponse])
@@ -382,10 +591,10 @@ async def bulk_import_members(data: BulkMemberImport, request: Request):
             "display_name": display_name,
             "status": member.status,
             "starting_balance": member.starting_balance,
-            "earned": member.earned if hasattr(member, 'earned') else 0,
-            "bonus": member.bonus if hasattr(member, 'bonus') else 0,
-            "spent": member.spent if hasattr(member, 'spent') else 0,
-            "adjustments": member.adjustments if hasattr(member, 'adjustments') else 0,
+            "earned": 0,
+            "bonus": 0,
+            "spent": 0,
+            "adjustments": 0,
             "current_balance": member.starting_balance,
             "qr_payload": qr_payload,
             "notes": member.notes,
@@ -396,6 +605,77 @@ async def bulk_import_members(data: BulkMemberImport, request: Request):
         imported += 1
     
     return {"imported": imported, "skipped": skipped}
+
+@api_router.post("/members/upload-csv")
+async def upload_csv_members(request: Request, file: UploadFile = File(...)):
+    """Bulk import members from CSV file"""
+    await require_admin_or_staff(request)
+    
+    if not file.filename.endswith('.csv'):
+        raise HTTPException(status_code=400, detail="File must be a CSV")
+    
+    content = await file.read()
+    decoded = content.decode('utf-8')
+    
+    reader = csv.DictReader(StringIO(decoded))
+    
+    imported = 0
+    skipped = 0
+    errors = []
+    
+    for row_num, row in enumerate(reader, start=2):
+        try:
+            member_id = row.get('member_id', '').strip()
+            first_name = row.get('first_name', '').strip()
+            last_name = row.get('last_name', '').strip()
+            
+            if not member_id or not first_name:
+                errors.append(f"Row {row_num}: Missing member_id or first_name")
+                continue
+            
+            existing = await db.members.find_one({"member_id": member_id})
+            if existing:
+                skipped += 1
+                continue
+            
+            status = row.get('status', 'Active').strip() or 'Active'
+            try:
+                starting_balance = float(row.get('starting_balance', 0) or 0)
+            except ValueError:
+                starting_balance = 0
+            notes = row.get('notes', '').strip()
+            
+            display_name = f"{first_name} {last_name}".strip()
+            qr_payload = f"CLUBPAY|{member_id}|{display_name}"
+            
+            member_doc = {
+                "id": str(uuid.uuid4()),
+                "member_id": member_id,
+                "first_name": first_name,
+                "last_name": last_name,
+                "display_name": display_name,
+                "status": status,
+                "starting_balance": starting_balance,
+                "earned": 0,
+                "bonus": 0,
+                "spent": 0,
+                "adjustments": 0,
+                "current_balance": starting_balance,
+                "qr_payload": qr_payload,
+                "notes": notes,
+                "created_at": datetime.now(timezone.utc).isoformat()
+            }
+            
+            await db.members.insert_one(member_doc)
+            imported += 1
+        except Exception as e:
+            errors.append(f"Row {row_num}: {str(e)}")
+    
+    return {
+        "imported": imported,
+        "skipped": skipped,
+        "errors": errors[:10] if errors else []
+    }
 
 # ----------- Transaction Routes -----------
 @api_router.get("/transactions", response_model=List[TransactionResponse])
@@ -641,6 +921,9 @@ app.add_middleware(
 async def startup_event():
     # Create indexes
     await db.users.create_index("email", unique=True)
+    await db.users.create_index("user_id", sparse=True)
+    await db.user_sessions.create_index("user_id")
+    await db.user_sessions.create_index("session_token")
     await db.members.create_index("member_id", unique=True)
     await db.login_attempts.create_index("identifier")
     
@@ -652,15 +935,17 @@ async def startup_event():
     if existing is None:
         hashed = hash_password(admin_password)
         await db.users.insert_one({
+            "user_id": f"user_{uuid.uuid4().hex[:12]}",
             "email": admin_email,
             "password_hash": hashed,
             "name": "Admin",
             "role": "admin",
             "member_id": None,
+            "linked_children": [],
             "created_at": datetime.now(timezone.utc).isoformat()
         })
         logger.info(f"Admin user created: {admin_email}")
-    elif not verify_password(admin_password, existing["password_hash"]):
+    elif not existing.get("password_hash") or not verify_password(admin_password, existing["password_hash"]):
         await db.users.update_one(
             {"email": admin_email},
             {"$set": {"password_hash": hash_password(admin_password)}}
@@ -677,8 +962,14 @@ async def startup_event():
 - Password: {admin_password}
 - Role: admin
 
+## Google OAuth
+- Any Google account can sign in
+- Default role for new Google users: student
+- Parents can link children via member_id
+
 ## Auth Endpoints
-- POST /api/auth/login
+- POST /api/auth/login (email/password)
+- POST /api/auth/google/session (Google OAuth)
 - POST /api/auth/register
 - POST /api/auth/logout
 - GET /api/auth/me

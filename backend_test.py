@@ -212,6 +212,55 @@ class ClubBucksAPITester:
         )
         return success, response
 
+    def test_google_oauth_session(self):
+        """Test Google OAuth session endpoint (will fail without valid session_id)"""
+        success, response = self.run_test(
+            "Google OAuth Session",
+            "POST",
+            "api/auth/google/session",
+            401,  # Expected to fail without valid session_id
+            data={"session_id": "invalid_session_id"}
+        )
+        return success, response
+
+    def test_parent_link_child(self, member_id):
+        """Test parent link child endpoint"""
+        success, response = self.run_test(
+            "Parent Link Child",
+            "POST",
+            "api/parent/link-child",
+            403,  # Expected to fail as admin is not a parent role
+            data={"member_id": member_id}
+        )
+        return success, response
+
+    def test_csv_upload_endpoint(self):
+        """Test CSV upload endpoint structure (without actual file)"""
+        # This will test the endpoint exists but fail due to missing file
+        success, response = self.run_test(
+            "CSV Upload Endpoint",
+            "POST",
+            "api/members/upload-csv",
+            422,  # Expected to fail without file
+            data={}
+        )
+        return success, response
+
+    def test_member_update(self, member_id):
+        """Test member update endpoint"""
+        success, response = self.run_test(
+            "Update Member",
+            "PUT",
+            f"api/members/{member_id}",
+            200,
+            data={
+                "first_name": "Updated",
+                "last_name": "Name",
+                "notes": "Updated via API test"
+            }
+        )
+        return success, response
+
 def main():
     print("🚀 Starting Club Bucks API Testing...")
     print("=" * 60)
@@ -274,8 +323,21 @@ def main():
         # Test 12: Quick Transaction
         tester.test_quick_transaction(test_member_id)
 
+        # Test 14: Member Update
+        tester.test_member_update(test_member_id)
+
     # Test 13: Get All Transactions
     tester.test_get_transactions()
+
+    # Test 15: Google OAuth Session (expected to fail)
+    tester.test_google_oauth_session()
+
+    # Test 16: Parent Link Child (expected to fail - admin not parent)
+    if test_member_id:
+        tester.test_parent_link_child(test_member_id)
+
+    # Test 17: CSV Upload Endpoint
+    tester.test_csv_upload_endpoint()
 
     # Print results
     print("\n" + "=" * 60)

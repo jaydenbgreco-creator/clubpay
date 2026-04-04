@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 
 const AuthContext = createContext(null);
@@ -9,7 +9,14 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null); // null = checking, false = not authenticated, object = authenticated
   const [loading, setLoading] = useState(true);
 
-  const checkAuth = async () => {
+  const checkAuth = useCallback(async () => {
+    // CRITICAL: If returning from OAuth callback, skip the /me check.
+    // AuthCallback will exchange the session_id and establish the session first.
+    if (window.location.hash?.includes('session_id=')) {
+      setLoading(false);
+      return;
+    }
+
     try {
       const response = await axios.get(`${API_URL}/api/auth/me`, {
         withCredentials: true
@@ -20,11 +27,11 @@ export const AuthProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     checkAuth();
-  }, []);
+  }, [checkAuth]);
 
   const login = async (email, password) => {
     const response = await axios.post(`${API_URL}/api/auth/login`, 
@@ -33,6 +40,12 @@ export const AuthProvider = ({ children }) => {
     );
     setUser(response.data);
     return response.data;
+  };
+
+  const loginWithGoogle = () => {
+    // REMINDER: DO NOT HARDCODE THE URL, OR ADD ANY FALLBACKS OR REDIRECT URLS, THIS BREAKS THE AUTH
+    const redirectUrl = window.location.origin + '/dashboard';
+    window.location.href = `https://auth.emergentagent.com/?redirect=${encodeURIComponent(redirectUrl)}`;
   };
 
   const register = async (email, password, name, role = 'student') => {
@@ -63,13 +76,15 @@ export const AuthProvider = ({ children }) => {
       user,
       loading,
       login,
+      loginWithGoogle,
       register,
       logout,
       checkAuth,
       isAdmin,
       isStaff,
       isStudent,
-      isParent
+      isParent,
+      setUser
     }}>
       {children}
     </AuthContext.Provider>

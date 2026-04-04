@@ -1,0 +1,2 @@
+member_id,first_name,last_name,status,starting_balance,notes
+Test-001,Test,User,Active,10,Test member from CSV

@@ -1,24 +1,34 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { Toaster } from 'sonner';
 
 // Pages
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
+import AuthCallback from './pages/AuthCallback';
 import AdminDashboard from './pages/AdminDashboard';
 import MembersPage from './pages/MembersPage';
 import AddMemberPage from './pages/AddMemberPage';
+import EditMemberPage from './pages/EditMemberPage';
+import BulkImportPage from './pages/BulkImportPage';
 import TransactionsPage from './pages/TransactionsPage';
 import LeaderboardPage from './pages/LeaderboardPage';
 import ScannerPage from './pages/ScannerPage';
 import StudentDashboard from './pages/StudentDashboard';
+import ParentDashboard from './pages/ParentDashboard';
 
 import './App.css';
 
 // Protected Route Component
 const ProtectedRoute = ({ children, allowedRoles }) => {
   const { user, loading } = useAuth();
+  const location = useLocation();
+
+  // If user data was passed from AuthCallback, use it
+  if (location.state?.user) {
+    return children;
+  }
 
   if (loading) {
     return (
@@ -69,7 +79,15 @@ const PublicRoute = ({ children }) => {
   return children;
 };
 
-function AppRoutes() {
+// Router component that handles OAuth callback synchronously
+function AppRouter() {
+  const location = useLocation();
+
+  // Check URL fragment (not query params) for session_id - MUST be synchronous
+  if (location.hash?.includes('session_id=')) {
+    return <AuthCallback />;
+  }
+
   return (
     <Routes>
       {/* Public Routes */}
@@ -90,6 +108,16 @@ function AppRoutes() {
       <Route path="/members/new" element={
         <ProtectedRoute allowedRoles={['admin', 'staff']}>
           <AddMemberPage />
+        </ProtectedRoute>
+      } />
+      <Route path="/members/:memberId/edit" element={
+        <ProtectedRoute allowedRoles={['admin', 'staff']}>
+          <EditMemberPage />
+        </ProtectedRoute>
+      } />
+      <Route path="/members/import" element={
+        <ProtectedRoute allowedRoles={['admin', 'staff']}>
+          <BulkImportPage />
         </ProtectedRoute>
       } />
       <Route path="/transactions" element={
@@ -115,17 +143,10 @@ function AppRoutes() {
         </ProtectedRoute>
       } />
 
-      {/* Parent Routes - Placeholder */}
+      {/* Parent Routes */}
       <Route path="/parent" element={
         <ProtectedRoute allowedRoles={['parent']}>
-          <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-3xl shadow-sm border border-slate-100 p-8 max-w-md text-center">
-              <h2 className="text-2xl font-black text-slate-900 mb-2" style={{ fontFamily: 'Nunito, sans-serif' }}>
-                Parent Dashboard
-              </h2>
-              <p className="text-slate-500">Coming soon! Link your child's account to view their balance.</p>
-            </div>
-          </div>
+          <ParentDashboard />
         </ProtectedRoute>
       } />
 
@@ -140,7 +161,7 @@ function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
-        <AppRoutes />
+        <AppRouter />
         <Toaster 
           position="top-right" 
           toastOptions={{
