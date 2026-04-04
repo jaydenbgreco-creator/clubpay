@@ -1,0 +1,102 @@
+{
+  "theme": "LIGHT",
+  "archetype": "6 (Vibrant Play)",
+  "emotion_and_tone": "Friendly, motivating, trustworthy, playful but organized.",
+  "typography": {
+    "primary_heading_font": "Nunito",
+    "secondary_body_font": "DM Sans",
+    "scale": {
+      "h1": "text-4xl sm:text-5xl font-black tracking-tight",
+      "h2": "text-2xl sm:text-3xl font-bold tracking-tight",
+      "h3": "text-xl sm:text-2xl font-bold",
+      "body": "text-base font-medium",
+      "small": "text-sm font-medium uppercase tracking-[0.1em]"
+    }
+  },
+  "colors": {
+    "background": "bg-slate-50",
+    "surface": "bg-white",
+    "primary": "sky-500",
+    "primary_hover": "sky-600",
+    "accent_bucks": "amber-500",
+    "success": "emerald-500",
+    "danger": "rose-500",
+    "text_main": "text-slate-900",
+    "text_muted": "text-slate-500",
+    "border": "border-slate-200"
+  },
+  "components": {
+    "cards": {
+      "style": "bg-white rounded-3xl shadow-sm border border-slate-100 p-6 md:p-8",
+      "hover": "hover:shadow-md hover:-translate-y-1 transition-all duration-300 ease-out"
+    },
+    "buttons": {
+      "primary": "bg-sky-500 text-white rounded-full font-bold px-6 py-3 hover:bg-sky-600 active:scale-95 transition-all shadow-sm hover:shadow-md",
+      "bucks": "bg-amber-500 text-white rounded-full font-bold px-6 py-3 hover:bg-amber-600 active:scale-95 transition-all shadow-sm hover:shadow-md",
+      "secondary": "bg-white text-slate-700 border-2 border-slate-200 rounded-full font-bold px-6 py-3 hover:border-slate-300 hover:bg-slate-50 transition-all active:scale-95"
+    },
+    "inputs": {
+      "style": "bg-slate-50 border-2 border-slate-200 rounded-2xl px-4 py-3 focus:outline-none focus:ring-0 focus:border-sky-500 transition-colors"
+    },
+    "badges": {
+      "earn": "bg-emerald-100 text-emerald-700 rounded-full px-3 py-1 text-sm font-bold",
+      "spend": "bg-rose-100 text-rose-700 rounded-full px-3 py-1 text-sm font-bold"
+    }
+  },
+  "layout": {
+    "spacing_scale": "p-6, p-8, gap-6, gap-8",
+    "dashboard_grid": "grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6",
+    "bento_spans": {
+      "balance_card": "col-span-1 md:col-span-2 row-span-2",
+      "quick_actions": "col-span-1",
+      "recent_activity": "col-span-1 md:col-span-2 row-span-2"
+    }
+  },
+  "media": {
+    "images": [
+      {
+        "category": "hero_background",
+        "url": "https://images.unsplash.com/photo-1630638208195-9a8d9510d855?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2Njl8MHwxfHNlYXJjaHwxfHxjaGlsZHJlbiUyMHBsYXlpbmclMjBwbGF5Z3JvdW5kfGVufDB8fHx8MTc3NTMyOTk4NHww&ixlib=rb-4.1.0&q=85",
+        "description": "Children playing playground - for parent/admin landing page hero"
+      },
+      {
+        "category": "coin_icon_photo",
+        "url": "https://images.pexels.com/photos/8442429/pexels-photo-8442429.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+        "description": "Gold coins - can be used as a graphic element in the 'Bucks' balance card"
+      },
+      {
+        "category": "learning_background",
+        "url": "https://images.unsplash.com/photo-1758270704925-fa59d93119c1?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NTYxODh8MHwxfHNlYXJjaHwyfHx0ZWFjaGVyJTIwc3R1ZGVudCUyMGxlYXJuaW5nfGVufDB8fHx8MTc3NTMyOTk4NXww&ixlib=rb-4.1.0&q=85",
+        "description": "Teacher lecturing students - for admin dashboard welcome state"
+      }
+    ]
+  },
+  "specific_pages": {
+    "dashboard_student": {
+      "layout": "Mobile-first, huge balance card at the top with a massive amber text (e.g., text-6xl), floating QR code button for quick scan. Bottom navigation for Leaderboard and History."
+    },
+    "dashboard_admin": {
+      "layout": "Sidebar navigation. Top 'Control Room' style bento grid for quick stats (Total Bucks, Total Members). Main area contains Shadcn table for members, and a 'Quick Log' widget for fast manual transaction entry. Dedicated 'Scanner' page accessible via prominent nav link."
+    },
+    "dashboard_parent": {
+      "layout": "Clean cards per child. Shows child avatar/initials, current balance, and recent transaction feed. Simple, transparent, minimal interactive elements."
+    },
+    "scanner_station": {
+      "layout": "Full screen optimized for iPad/Mobile. Camera viewfinder takes up 60% of the screen. Bottom area has large number pad or quick '+10', '+50', '-20' bucks buttons."
+    }
+  },
+  "animations": {
+    "page_transitions": "framer-motion fade in and slide up (initial opacity 0, y 20)",
+    "balance_update": "Counter animation for numbers (e.g. going from 100 to 120 bucks) to add gamification feel.",
+    "hover_states": "Soft lift and shadow expansion on all interactive cards and buttons."
+  },
+  "instructions_to_main_agent": [
+    "Use standard Tailwind classes. Include 'Nunito' and 'DM Sans' via Google Fonts.",
+    "Do not use generic Inter font for headings.",
+    "Implement lucide-react icons with a bold stroke (strokeWidth={2.5}) for a friendlier look.",
+    "Build Shadcn UI components but heavily round them (rounded-2xl or rounded-3xl) to match the 'Vibrant Play' theme.",
+    "Ensure the scan station is highly responsive and uses a reliable QR code scanner library.",
+    "For the leaderboard, use a colorful stacked list where top 3 have gold/silver/bronze highlights.",
+    "CRITICAL: Add 'data-testid' on all interactive and key informational elements."
+  ]
+}
