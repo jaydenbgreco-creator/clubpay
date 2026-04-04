@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { qrApi, transactionsApi } from '../services/api';
+import { qrApi, transactionsApi, membersApi } from '../services/api';
 import {
   Coins, Scan, Camera, Plus, Minus, X, CheckCircle, AlertCircle,
-  Users, LayoutDashboard, History, Trophy, LogOut, Menu
+  Users, LayoutDashboard, History, Trophy, LogOut, Menu, Keyboard, Search
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Html5QrcodeScanner } from 'html5-qrcode';
@@ -18,6 +18,9 @@ const ScannerPage = () => {
   const [amount, setAmount] = useState('');
   const [transactionType, setTransactionType] = useState('earn');
   const [processing, setProcessing] = useState(false);
+  const [showManualEntry, setShowManualEntry] = useState(false);
+  const [manualMemberId, setManualMemberId] = useState('');
+  const [searchingMember, setSearchingMember] = useState(false);
   const scannerRef = useRef(null);
   const html5QrCodeRef = useRef(null);
 
@@ -71,6 +74,26 @@ const ScannerPage = () => {
       toast.success(`Found: ${response.data.display_name}`);
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Invalid QR code');
+    }
+  };
+
+  const handleManualLookup = async () => {
+    if (!manualMemberId.trim()) {
+      toast.error('Please enter a Member ID');
+      return;
+    }
+    
+    setSearchingMember(true);
+    try {
+      const response = await membersApi.getById(manualMemberId.trim());
+      setScannedMember(response.data);
+      setShowManualEntry(false);
+      setManualMemberId('');
+      toast.success(`Found: ${response.data.display_name}`);
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Member not found');
+    } finally {
+      setSearchingMember(false);
     }
   };
 
@@ -174,7 +197,7 @@ const ScannerPage = () => {
 
         {/* Scanner Area */}
         <div className="flex-1 flex flex-col items-center justify-center p-6">
-          {!scanning && !scannedMember && (
+          {!scanning && !scannedMember && !showManualEntry && (
             <div className="text-center animate-fade-in-up" data-testid="scanner-idle">
               <div className="w-32 h-32 bg-slate-800 rounded-3xl flex items-center justify-center mx-auto mb-8">
                 <Scan className="w-16 h-16 text-amber-400" strokeWidth={1.5} />
@@ -182,15 +205,76 @@ const ScannerPage = () => {
               <h2 className="text-3xl font-black text-white mb-4" style={{ fontFamily: 'Nunito, sans-serif' }}>
                 Ready to Scan
               </h2>
-              <p className="text-slate-400 mb-8">Tap the button below to scan a member's QR code</p>
-              <button
-                onClick={startScanner}
-                className="btn-bucks text-xl px-12 py-4"
-                data-testid="start-scan-btn"
-              >
-                <Camera className="w-6 h-6 mr-2 inline" strokeWidth={2.5} />
-                Start Scanning
-              </button>
+              <p className="text-slate-400 mb-8">Scan a QR code or enter Member ID manually</p>
+              <div className="flex flex-col gap-4">
+                <button
+                  onClick={startScanner}
+                  className="btn-bucks text-xl px-12 py-4"
+                  data-testid="start-scan-btn"
+                >
+                  <Camera className="w-6 h-6 mr-2 inline" strokeWidth={2.5} />
+                  Scan QR Code
+                </button>
+                <button
+                  onClick={() => setShowManualEntry(true)}
+                  className="bg-slate-700 text-white rounded-full font-bold px-8 py-4 hover:bg-slate-600 transition-all flex items-center justify-center gap-2"
+                  data-testid="manual-entry-btn"
+                >
+                  <Keyboard className="w-5 h-5" strokeWidth={2.5} />
+                  Enter Member ID
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Manual Entry Mode */}
+          {showManualEntry && !scannedMember && (
+            <div className="w-full max-w-md animate-fade-in-up" data-testid="manual-entry-active">
+              <div className="bg-slate-800 rounded-3xl p-6 mb-6">
+                <h3 className="text-xl font-black text-white mb-4 text-center" style={{ fontFamily: 'Nunito, sans-serif' }}>
+                  <Keyboard className="w-6 h-6 text-amber-400 inline mr-2" />
+                  Enter Member ID
+                </h3>
+                <p className="text-slate-400 text-sm text-center mb-6">
+                  Don't have your card? No problem! Enter your Member ID below.
+                </p>
+                <input
+                  type="text"
+                  value={manualMemberId}
+                  onChange={(e) => setManualMemberId(e.target.value)}
+                  placeholder="e.g., Mem-05152"
+                  className="w-full bg-slate-700 border-2 border-slate-600 rounded-2xl px-4 py-4 text-xl font-bold text-white text-center focus:outline-none focus:border-amber-500 placeholder-slate-500"
+                  style={{ fontFamily: 'Nunito, sans-serif' }}
+                  data-testid="manual-member-id-input"
+                  onKeyDown={(e) => e.key === 'Enter' && handleManualLookup()}
+                  autoFocus
+                />
+              </div>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => { setShowManualEntry(false); setManualMemberId(''); }}
+                  className="btn-secondary flex-1"
+                  data-testid="cancel-manual-btn"
+                >
+                  <X className="w-5 h-5 mr-2 inline" />
+                  Cancel
+                </button>
+                <button
+                  onClick={handleManualLookup}
+                  disabled={searchingMember || !manualMemberId.trim()}
+                  className="btn-bucks flex-1 disabled:opacity-50"
+                  data-testid="lookup-member-btn"
+                >
+                  {searchingMember ? (
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mx-auto" />
+                  ) : (
+                    <>
+                      <Search className="w-5 h-5 mr-2 inline" />
+                      Find Member
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           )}
 
