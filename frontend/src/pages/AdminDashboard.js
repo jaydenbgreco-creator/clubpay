@@ -1,15 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useSettings } from '../context/SettingsContext';
 import { dashboardApi, membersApi, transactionsApi } from '../services/api';
 import {
   Coins, Users, TrendingUp, ArrowUpRight, ArrowDownRight,
   QrCode, Plus, LogOut, LayoutDashboard, Trophy, Scan,
-  UserPlus, History, Menu, X, ChevronRight
+  UserPlus, History, Menu, X, ChevronRight, Shield, Settings
 } from 'lucide-react';
 
 const AdminDashboard = () => {
   const { user, logout, isAdmin } = useAuth();
+  const { settings } = useSettings();
   const navigate = useNavigate();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -44,13 +46,21 @@ const AdminDashboard = () => {
     navigate('/login');
   };
 
-  const navItems = [
+  const baseNavItems = [
     { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { path: '/members', icon: Users, label: 'Members' },
     { path: '/transactions', icon: History, label: 'Transactions' },
     { path: '/leaderboard', icon: Trophy, label: 'Leaderboard' },
     { path: '/scanner', icon: Scan, label: 'Scan Station' },
   ];
+
+  // Add admin-only items
+  const navItems = isAdmin 
+    ? [...baseNavItems, 
+        { path: '/admin/staff', icon: Shield, label: 'Staff' },
+        { path: '/admin/settings', icon: Settings, label: 'Settings' }
+      ]
+    : baseNavItems;
 
   const StatCard = ({ icon: Icon, label, value, color = 'sky', subValue, trend }) => (
     <div className="bg-white rounded-3xl shadow-sm border border-slate-100 p-6 card-hover" data-testid={`stat-${label.toLowerCase().replace(/\s/g, '-')}`}>
@@ -106,12 +116,12 @@ const AdminDashboard = () => {
       <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-slate-200 transform transition-transform duration-300 lg:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="p-6">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-amber-500 rounded-2xl flex items-center justify-center">
+            <div className="w-12 h-12 rounded-2xl flex items-center justify-center" style={{ backgroundColor: settings?.accent_color || '#f59e0b' }}>
               <Coins className="w-6 h-6 text-white" strokeWidth={2.5} />
             </div>
             <div>
-              <h1 className="text-xl font-black text-slate-900" style={{ fontFamily: 'Nunito, sans-serif' }}>Club Bucks</h1>
-              <p className="text-xs text-slate-500 font-medium">Admin Panel</p>
+              <h1 className="text-xl font-black text-slate-900" style={{ fontFamily: 'Nunito, sans-serif' }}>{settings?.app_name || 'Club Bucks'}</h1>
+              <p className="text-xs text-slate-500 font-medium">{isAdmin ? 'Admin Panel' : 'Staff Panel'}</p>
             </div>
           </div>
         </div>
@@ -123,9 +133,10 @@ const AdminDashboard = () => {
               to={item.path}
               className={`flex items-center gap-3 px-4 py-3 rounded-2xl font-bold transition-all ${
                 location.pathname === item.path
-                  ? 'bg-sky-50 text-sky-600'
+                  ? 'text-white'
                   : 'text-slate-600 hover:bg-slate-50'
               }`}
+              style={location.pathname === item.path ? { backgroundColor: settings?.primary_color || '#0ea5e9' } : {}}
               data-testid={`nav-${item.label.toLowerCase().replace(/\s/g, '-')}`}
               onClick={() => setSidebarOpen(false)}
             >

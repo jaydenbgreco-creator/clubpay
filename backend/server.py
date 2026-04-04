@@ -113,6 +113,12 @@ async def require_admin_or_staff(request: Request) -> dict:
         raise HTTPException(status_code=403, detail="Admin or Staff access required")
     return user
 
+async def require_admin(request: Request) -> dict:
+    user = await get_current_user(request)
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    return user
+
 # ----------- Pydantic Models -----------
 class UserCreate(BaseModel):
     email: EmailStr
@@ -190,6 +196,21 @@ class BulkMemberImport(BaseModel):
 
 class LinkChildRequest(BaseModel):
     member_id: str
+
+class StaffCreate(BaseModel):
+    email: EmailStr
+    password: str
+    name: str
+
+class StaffUpdate(BaseModel):
+    name: Optional[str] = None
+    password: Optional[str] = None
+
+class AppSettings(BaseModel):
+    app_name: str = "Club Bucks"
+    primary_color: str = "#0ea5e9"
+    accent_color: str = "#f59e0b"
+    theme: str = "light"
 
 # ----------- Auth Routes -----------
 @api_router.post("/auth/register")
@@ -474,6 +495,132 @@ async def get_child_transactions(member_id: str, request: Request):
     ).sort("created_at", -1).to_list(50)
     
     return transactions
+
+# ----------- Staff Management Routes (Admin Only) -----------
+@api_router.get("/admin/staff")
+async def get_all_staff(request: Request):
+    """Get all staff members (admin only)"""
+    await require_admin(request)
+    
+    staff = await db.users.find(
+        {"role": "staff"},
+        {"_id": 0, "password_hash": 0}
+    ).to_list(100)
+    
+    return staff
+
+@api_router.post("/admin/staff")
+async def create_staff(data: StaffCreate, request: Request):
+    """Create a new staff member (admin only)"""
+    await require_admin(request)
+    
+    email = data.email.lower()
+    existing = await db.users.find_one({"email": email})
+    if existing:
+        raise HTTPException(status_code=400, detail="Email already registered")
+    
+    hashed = hash_password(data.password)
+    staff_doc = {
+        "user_id": f"user_{uuid.uuid4().hex[:12]}",
+        "email": email,
+        "password_hash": hashed,
+        "name": data.name,
+        "role": "staff",
+        "member_id": None,
+        "linked_children": [],
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.users.insert_one(staff_doc)
+    staff_doc.pop("_id", None)
+    staff_doc.pop("password_hash", None)
+    
+    return staff_doc
+
+@api_router.put("/admin/staff/{user_id}")
+async def update_staff(user_id: str, data: StaffUpdate, request: Request):
+    """Update a staff member (admin only)"""
+    await require_admin(request)
+    
+    staff = await db.users.find_one({"user_id": user_id, "role": "staff"})
+    if not staff:
+        raise HTTPException(status_code=404, detail="Staff member not found")
+    
+    update_data = {}
+    if data.name:
+        update_data["name"] = data.name
+    if data.password:
+        update_data["password_hash"] = hash_password(data.password)
+    
+    if update_data:
+        await db.users.update_one({"user_id": user_id}, {"$set": update_data})
+    
+    updated = await db.users.find_one({"user_id": user_id}, {"_id": 0, "password_hash": 0})
+    return updated
+
+@api_router.delete("/admin/staff/{user_id}")
+async def delete_staff(user_id: str, request: Request):
+    """Delete a staff member (admin only)"""
+    await require_admin(request)
+    
+    result = await db.users.delete_one({"user_id": user_id, "role": "staff"})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Staff member not found")
+    
+    return {"message": "Staff member deleted"}
+
+# ----------- App Settings Routes (Admin Only) -----------
+@api_router.get("/settings")
+async def get_settings(request: Request):
+    """Get app settings (any authenticated user can read)"""
+    await get_current_user(request)
+    
+    settings = await db.app_settings.find_one({"_id": "app_settings"}, {"_id": 0})
+    if not settings:
+        # Return defaults
+        return {
+            "app_name": "Club Bucks",
+            "primary_color": "#0ea5e9",
+            "accent_color": "#f59e0b",
+            "theme": "light"
+        }
+    return settings
+
+@api_router.get("/settings/public")
+async def get_public_settings():
+    """Get app settings (no auth required for theming)"""
+    settings = await db.app_settings.find_one({"_id": "app_settings"}, {"_id": 0})
+    if not settings:
+        return {
+            "app_name": "Club Bucks",
+            "primary_color": "#0ea5e9",
+            "accent_color": "#f59e0b",
+            "theme": "light"
+        }
+    return settings
+
+@api_router.put("/settings")
+async def update_settings(data: AppSettings, request: Request):
+    """Update app settings (admin only)"""
+    await require_admin(request)
+    
+    settings_doc = {
+        "_id": "app_settings",
+        "app_name": data.app_name,
+        "primary_color": data.primary_color,
+        "accent_color": data.accent_color,
+        "theme": data.theme,
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.app_settings.replace_one(
+        {"_id": "app_settings"},
+        settings_doc,
+        upsert=True
+    )
+    
+    settings_doc.pop("_id")
+    return settings_doc
 
 # ----------- Member Routes -----------
 @api_router.get("/members", response_model=List[MemberResponse])

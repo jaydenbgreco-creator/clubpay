@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { SettingsProvider } from './context/SettingsContext';
 import { Toaster } from 'sonner';
 
 // Pages
@@ -17,6 +18,8 @@ import LeaderboardPage from './pages/LeaderboardPage';
 import ScannerPage from './pages/ScannerPage';
 import StudentDashboard from './pages/StudentDashboard';
 import ParentDashboard from './pages/ParentDashboard';
+import StaffManagementPage from './pages/StaffManagementPage';
+import SettingsPage from './pages/SettingsPage';
 
 import './App.css';
 
@@ -136,6 +139,18 @@ function AppRouter() {
         </ProtectedRoute>
       } />
 
+      {/* Admin Only Routes */}
+      <Route path="/admin/staff" element={
+        <ProtectedRoute allowedRoles={['admin']}>
+          <StaffManagementPage />
+        </ProtectedRoute>
+      } />
+      <Route path="/admin/settings" element={
+        <ProtectedRoute allowedRoles={['admin']}>
+          <SettingsPage />
+        </ProtectedRoute>
+      } />
+
       {/* Student Routes */}
       <Route path="/student" element={
         <ProtectedRoute allowedRoles={['student']}>
@@ -159,20 +174,22 @@ function AppRouter() {
 
 function App() {
   return (
-    <AuthProvider>
-      <BrowserRouter>
-        <AppRouter />
-        <Toaster 
-          position="top-right" 
-          toastOptions={{
-            style: {
-              borderRadius: '16px',
-              fontFamily: 'DM Sans, sans-serif'
-            }
-          }}
-        />
-      </BrowserRouter>
-    </AuthProvider>
+    <SettingsProvider>
+      <AuthProvider>
+        <BrowserRouter>
+          <AppRouter />
+          <Toaster 
+            position="top-right" 
+            toastOptions={{
+              style: {
+                borderRadius: '16px',
+                fontFamily: 'DM Sans, sans-serif'
+              }
+            }}
+          />
+        </BrowserRouter>
+      </AuthProvider>
+    </SettingsProvider>
   );
 }
 
