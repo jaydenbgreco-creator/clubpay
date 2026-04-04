@@ -19,10 +19,14 @@ const ScannerPage = () => {
   const [transactionType, setTransactionType] = useState('earn');
   const [processing, setProcessing] = useState(false);
   const [showManualEntry, setShowManualEntry] = useState(false);
-  const [manualMemberId, setManualMemberId] = useState('');
-  const [searchingMember, setSearchingMember] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [searching, setSearching] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
   const scannerRef = useRef(null);
   const html5QrCodeRef = useRef(null);
+  const searchTimeoutRef = useRef(null);
+  const dropdownRef = useRef(null);
 
   useEffect(() => {
     return () => {
@@ -30,6 +34,50 @@ const ScannerPage = () => {
         html5QrCodeRef.current.clear().catch(console.error);
       }
     };
+  }, []);
+
+  // Search members as user types
+  useEffect(() => {
+    if (searchQuery.length < 1) {
+      setSearchResults([]);
+      setShowDropdown(false);
+      return;
+    }
+
+    // Debounce search
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+
+    searchTimeoutRef.current = setTimeout(async () => {
+      setSearching(true);
+      try {
+        const response = await membersApi.getAll({ search: searchQuery });
+        setSearchResults(response.data.slice(0, 8)); // Limit to 8 results
+        setShowDropdown(true);
+      } catch (error) {
+        console.error('Search error:', error);
+      } finally {
+        setSearching(false);
+      }
+    }, 300);
+
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, [searchQuery]);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setShowDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   const startScanner = () => {
@@ -77,24 +125,13 @@ const ScannerPage = () => {
     }
   };
 
-  const handleManualLookup = async () => {
-    if (!manualMemberId.trim()) {
-      toast.error('Please enter a Member ID');
-      return;
-    }
-    
-    setSearchingMember(true);
-    try {
-      const response = await membersApi.getById(manualMemberId.trim());
-      setScannedMember(response.data);
-      setShowManualEntry(false);
-      setManualMemberId('');
-      toast.success(`Found: ${response.data.display_name}`);
-    } catch (error) {
-      toast.error(error.response?.data?.detail || 'Member not found');
-    } finally {
-      setSearchingMember(false);
-    }
+  const selectMember = (member) => {
+    setScannedMember(member);
+    setShowManualEntry(false);
+    setSearchQuery('');
+    setSearchResults([]);
+    setShowDropdown(false);
+    toast.success(`Found: ${member.display_name}`);
   };
 
   const handleQuickAmount = (value) => {
@@ -220,8 +257,8 @@ const ScannerPage = () => {
                   className="bg-slate-700 text-white rounded-full font-bold px-8 py-4 hover:bg-slate-600 transition-all flex items-center justify-center gap-2"
                   data-testid="manual-entry-btn"
                 >
-                  <Keyboard className="w-5 h-5" strokeWidth={2.5} />
-                  Enter Member ID
+                  <Search className="w-5 h-5" strokeWidth={2.5} />
+                  Search Member
                 </button>
               </div>
             </div>
@@ -232,49 +269,80 @@ const ScannerPage = () => {
             <div className="w-full max-w-md animate-fade-in-up" data-testid="manual-entry-active">
               <div className="bg-slate-800 rounded-3xl p-6 mb-6">
                 <h3 className="text-xl font-black text-white mb-4 text-center" style={{ fontFamily: 'Nunito, sans-serif' }}>
-                  <Keyboard className="w-6 h-6 text-amber-400 inline mr-2" />
-                  Enter Member ID
+                  <Search className="w-6 h-6 text-amber-400 inline mr-2" />
+                  Find Member
                 </h3>
                 <p className="text-slate-400 text-sm text-center mb-6">
-                  Don't have your card? No problem! Enter your Member ID below.
+                  Search by Member ID or name
                 </p>
-                <input
-                  type="text"
-                  value={manualMemberId}
-                  onChange={(e) => setManualMemberId(e.target.value)}
-                  placeholder="e.g., Mem-05152"
-                  className="w-full bg-slate-700 border-2 border-slate-600 rounded-2xl px-4 py-4 text-xl font-bold text-white text-center focus:outline-none focus:border-amber-500 placeholder-slate-500"
-                  style={{ fontFamily: 'Nunito, sans-serif' }}
-                  data-testid="manual-member-id-input"
-                  onKeyDown={(e) => e.key === 'Enter' && handleManualLookup()}
-                  autoFocus
-                />
-              </div>
-              <div className="flex gap-3">
-                <button
-                  onClick={() => { setShowManualEntry(false); setManualMemberId(''); }}
-                  className="btn-secondary flex-1"
-                  data-testid="cancel-manual-btn"
-                >
-                  <X className="w-5 h-5 mr-2 inline" />
-                  Cancel
-                </button>
-                <button
-                  onClick={handleManualLookup}
-                  disabled={searchingMember || !manualMemberId.trim()}
-                  className="btn-bucks flex-1 disabled:opacity-50"
-                  data-testid="lookup-member-btn"
-                >
-                  {searchingMember ? (
-                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mx-auto" />
-                  ) : (
-                    <>
-                      <Search className="w-5 h-5 mr-2 inline" />
-                      Find Member
-                    </>
+                
+                {/* Search Input with Dropdown */}
+                <div className="relative" ref={dropdownRef}>
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Type ID or name..."
+                    className="w-full bg-slate-700 border-2 border-slate-600 rounded-2xl px-4 py-4 text-lg font-bold text-white focus:outline-none focus:border-amber-500 placeholder-slate-500"
+                    data-testid="member-search-input"
+                    autoFocus
+                  />
+                  {searching && (
+                    <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                      <div className="w-5 h-5 border-2 border-amber-400 border-t-transparent rounded-full animate-spin" />
+                    </div>
                   )}
-                </button>
+                  
+                  {/* Search Results Dropdown */}
+                  {showDropdown && searchResults.length > 0 && (
+                    <div className="absolute top-full left-0 right-0 mt-2 bg-slate-700 rounded-2xl overflow-hidden shadow-xl z-10 max-h-80 overflow-y-auto" data-testid="search-dropdown">
+                      {searchResults.map((member) => (
+                        <button
+                          key={member.member_id}
+                          onClick={() => selectMember(member)}
+                          className="w-full px-4 py-3 flex items-center gap-3 hover:bg-slate-600 transition-colors text-left border-b border-slate-600 last:border-0"
+                          data-testid={`search-result-${member.member_id}`}
+                        >
+                          <div className="w-10 h-10 bg-amber-500 rounded-full flex items-center justify-center flex-shrink-0">
+                            <span className="text-white font-bold">{member.first_name?.[0]?.toUpperCase()}</span>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-bold text-white truncate">{member.display_name}</p>
+                            <p className="text-sm text-slate-400">{member.member_id}</p>
+                          </div>
+                          <div className="text-right flex-shrink-0">
+                            <p className="font-black text-amber-400" style={{ fontFamily: 'Nunito, sans-serif' }}>
+                              {member.current_balance}
+                            </p>
+                            <p className="text-xs text-slate-400">bucks</p>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  
+                  {/* No results message */}
+                  {showDropdown && searchQuery.length >= 2 && searchResults.length === 0 && !searching && (
+                    <div className="absolute top-full left-0 right-0 mt-2 bg-slate-700 rounded-2xl p-4 text-center" data-testid="no-results">
+                      <p className="text-slate-400">No members found</p>
+                    </div>
+                  )}
+                </div>
+                
+                {/* Helper text */}
+                <p className="text-slate-500 text-xs text-center mt-4">
+                  Start typing to see matching members
+                </p>
               </div>
+              
+              <button
+                onClick={() => { setShowManualEntry(false); setSearchQuery(''); setSearchResults([]); setShowDropdown(false); }}
+                className="btn-secondary w-full"
+                data-testid="cancel-manual-btn"
+              >
+                <X className="w-5 h-5 mr-2 inline" />
+                Cancel
+              </button>
             </div>
           )}
 
