@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useClub } from '../context/ClubContext';
 import {
   Coins, Users, Upload, Download, FileSpreadsheet, CheckCircle, AlertCircle,
   LayoutDashboard, History, Trophy, Scan, LogOut, Menu, ChevronLeft
@@ -12,6 +13,7 @@ const API_URL = process.env.REACT_APP_BACKEND_URL;
 
 const BulkImportPage = () => {
   const { user, logout } = useAuth();
+  const { activeClub } = useClub();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [file, setFile] = useState(null);
@@ -42,7 +44,7 @@ const BulkImportPage = () => {
     formData.append('file', file);
 
     try {
-      const response = await axios.post(`${API_URL}/api/members/upload-csv`, formData, {
+      const response = await axios.post(`${API_URL}/api/members/upload-csv${activeClub?.id ? `?club_id=${activeClub.id}` : ''}`, formData, {
         withCredentials: true,
         headers: {
           'Content-Type': 'multipart/form-data'

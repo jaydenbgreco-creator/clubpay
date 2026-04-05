@@ -10,6 +10,14 @@ const api = axios.create({
   }
 });
 
+// Clubs API
+export const clubsApi = {
+  getAll: () => api.get('/clubs'),
+  create: (data) => api.post('/clubs', data),
+  update: (clubId, data) => api.put(`/clubs/${clubId}`, data),
+  delete: (clubId) => api.delete(`/clubs/${clubId}`)
+};
+
 // Members API
 export const membersApi = {
   getAll: (params = {}) => api.get('/members', { params }),
@@ -17,22 +25,25 @@ export const membersApi = {
   create: (data) => api.post('/members', data),
   update: (memberId, data) => api.put(`/members/${memberId}`, data),
   delete: (memberId) => api.delete(`/members/${memberId}`),
-  bulkImport: (members) => api.post('/members/bulk-import', { members })
+  bulkImport: (members, clubId) => api.post('/members/bulk-import', { members }, { params: clubId ? { club_id: clubId } : {} })
 };
 
 // Transactions API
 export const transactionsApi = {
   getAll: (params = {}) => api.get('/transactions', { params }),
   create: (data) => api.post('/transactions', data),
-  quick: (memberId, amount, type = 'earn') => 
-    api.post(`/transactions/quick?member_id=${memberId}&amount=${amount}&type=${type}`)
+  quick: (memberId, amount, type = 'earn', clubId) => {
+    const params = { member_id: memberId, amount, type };
+    if (clubId) params.club_id = clubId;
+    return api.post('/transactions/quick', null, { params });
+  }
 };
 
 // Dashboard API
 export const dashboardApi = {
-  getStats: () => api.get('/dashboard/stats'),
-  getLeaderboard: (limit = 10) => api.get(`/dashboard/leaderboard?limit=${limit}`),
-  getRecentTransactions: (limit = 10) => api.get(`/dashboard/recent-transactions?limit=${limit}`)
+  getStats: (clubId) => api.get('/dashboard/stats', { params: clubId ? { club_id: clubId } : {} }),
+  getLeaderboard: (limit = 10, clubId) => api.get('/dashboard/leaderboard', { params: { limit, ...(clubId ? { club_id: clubId } : {}) } }),
+  getRecentTransactions: (limit = 10, clubId) => api.get('/dashboard/recent-transactions', { params: { limit, ...(clubId ? { club_id: clubId } : {}) } })
 };
 
 // QR Code API

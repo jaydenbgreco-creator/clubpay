@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useClub } from '../context/ClubContext';
 import { membersApi, transactionsApi, dashboardApi } from '../services/api';
 import {
   Coins, Users, Search, Plus, Edit2, Trash2, QrCode,
@@ -14,9 +15,11 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue
 } from '../components/ui/select';
 import { toast } from 'sonner';
+import { AdminLayout } from '../components/AdminLayout';
 
 const MembersPage = () => {
   const { user, logout } = useAuth();
+  const { activeClub } = useClub();
   const navigate = useNavigate();
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -43,11 +46,12 @@ const MembersPage = () => {
 
   useEffect(() => {
     loadMembers();
-  }, [searchQuery, statusFilter]);
+  }, [searchQuery, statusFilter, activeClub]);
 
   const loadMembers = async () => {
     try {
       const params = {};
+      if (activeClub?.id) params.club_id = activeClub.id;
       if (searchQuery) params.search = searchQuery;
       if (statusFilter && statusFilter !== 'all') params.status = statusFilter;
       const response = await membersApi.getAll(params);
@@ -97,6 +101,7 @@ const MembersPage = () => {
         type: transactionForm.type,
         category: transactionForm.category,
         amount: parseFloat(transactionForm.amount),
+        club_id: activeClub?.id,
         notes: transactionForm.notes
       });
       toast.success('Transaction recorded successfully');
@@ -108,229 +113,160 @@ const MembersPage = () => {
     }
   };
 
-  const navItems = [
-    { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-    { path: '/members', icon: Users, label: 'Members' },
-    { path: '/transactions', icon: History, label: 'Transactions' },
-    { path: '/leaderboard', icon: Trophy, label: 'Leaderboard' },
-    { path: '/scanner', icon: Scan, label: 'Scan Station' },
-  ];
+  const navItems = []; // Using AdminLayout now
 
   return (
-    <div className="min-h-screen bg-slate-50 flex">
-      {/* Sidebar */}
-      <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-slate-200 transform transition-transform duration-300 lg:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-        <div className="p-6">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-amber-500 rounded-2xl flex items-center justify-center">
-              <Coins className="w-6 h-6 text-white" strokeWidth={2.5} />
-            </div>
-            <div>
-              <h1 className="text-xl font-black text-slate-900" style={{ fontFamily: 'Nunito, sans-serif' }}>Club Bucks</h1>
-              <p className="text-xs text-slate-500 font-medium">Admin Panel</p>
-            </div>
-          </div>
+    <AdminLayout>
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+        <div>
+          <h2 className="text-3xl font-black text-slate-900" style={{ fontFamily: 'Nunito, sans-serif' }} data-testid="members-title">
+            Members
+          </h2>
+          <p className="text-slate-500">{members.length} total members{activeClub ? ` in ${activeClub.name}` : ''}</p>
         </div>
-
-        <nav className="px-4 space-y-1">
-          {navItems.map((item) => (
-            <Link
-              key={item.path}
-              to={item.path}
-              className={`flex items-center gap-3 px-4 py-3 rounded-2xl font-bold transition-all ${
-                location.pathname === item.path
-                  ? 'bg-sky-50 text-sky-600'
-                  : 'text-slate-600 hover:bg-slate-50'
-              }`}
-              onClick={() => setSidebarOpen(false)}
-            >
-              <item.icon className="w-5 h-5" strokeWidth={2.5} />
-              {item.label}
-            </Link>
-          ))}
-        </nav>
-
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-slate-200">
-          <div className="flex items-center gap-3 px-4 py-3">
-            <div className="w-10 h-10 bg-slate-200 rounded-full flex items-center justify-center">
-              <span className="text-slate-600 font-bold">{user?.name?.[0]?.toUpperCase() || 'A'}</span>
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="font-bold text-slate-900 truncate">{user?.name || 'Admin'}</p>
-              <p className="text-xs text-slate-500 capitalize">{user?.role}</p>
-            </div>
-            <button onClick={handleLogout} className="p-2 text-slate-400 hover:text-rose-500 transition-colors">
-              <LogOut className="w-5 h-5" strokeWidth={2.5} />
-            </button>
-          </div>
+        <div className="flex gap-3 flex-wrap">
+          <a 
+            href={`${process.env.REACT_APP_BACKEND_URL}/api/members/export${activeClub?.id ? `?club_id=${activeClub.id}` : ''}`}
+            className="btn-secondary flex items-center gap-2"
+            data-testid="export-members-btn"
+          >
+            <Download className="w-5 h-5" strokeWidth={2.5} />
+            Export CSV
+          </a>
+          <Link to="/members/import" className="btn-secondary flex items-center gap-2" data-testid="bulk-import-btn">
+            <Upload className="w-5 h-5" strokeWidth={2.5} />
+            Import CSV
+          </Link>
+          <Link to="/members/new" className="btn-primary flex items-center gap-2" data-testid="add-member-btn">
+            <Plus className="w-5 h-5" strokeWidth={2.5} />
+            Add Member
+          </Link>
         </div>
-      </aside>
+      </div>
 
-      {sidebarOpen && <div className="fixed inset-0 bg-black/50 z-40 lg:hidden" onClick={() => setSidebarOpen(false)} />}
-
-      {/* Main content */}
-      <main className="flex-1 lg:ml-64">
-        <header className="lg:hidden bg-white border-b border-slate-200 px-4 py-3 flex items-center justify-between">
-          <button onClick={() => setSidebarOpen(true)} className="p-2">
-            <Menu className="w-6 h-6 text-slate-600" />
-          </button>
-          <span className="font-black text-slate-900" style={{ fontFamily: 'Nunito, sans-serif' }}>Members</span>
-          <div className="w-10" />
-        </header>
-
-        <div className="p-6 md:p-8">
-          {/* Header */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-            <div>
-              <h2 className="text-3xl font-black text-slate-900" style={{ fontFamily: 'Nunito, sans-serif' }} data-testid="members-title">
-                Members
-              </h2>
-              <p className="text-slate-500">{members.length} total members</p>
-            </div>
-            <div className="flex gap-3 flex-wrap">
-              <a 
-                href={`${process.env.REACT_APP_BACKEND_URL}/api/members/export`}
-                className="btn-secondary flex items-center gap-2"
-                data-testid="export-members-btn"
-              >
-                <Download className="w-5 h-5" strokeWidth={2.5} />
-                Export CSV
-              </a>
-              <Link to="/members/import" className="btn-secondary flex items-center gap-2" data-testid="bulk-import-btn">
-                <Upload className="w-5 h-5" strokeWidth={2.5} />
-                Import CSV
-              </Link>
-              <Link to="/members/new" className="btn-primary flex items-center gap-2" data-testid="add-member-btn">
-                <Plus className="w-5 h-5" strokeWidth={2.5} />
-                Add Member
-              </Link>
-            </div>
+      {/* Search and Filter */}
+      <div className="bg-white rounded-3xl shadow-sm border border-slate-100 p-4 mb-6">
+        <div className="flex flex-col md:flex-row gap-4">
+          <div className="relative flex-1">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Search by name or ID..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="input-field pl-12"
+              data-testid="member-search-input"
+            />
           </div>
-
-          {/* Search and Filter */}
-          <div className="bg-white rounded-3xl shadow-sm border border-slate-100 p-4 mb-6">
-            <div className="flex flex-col md:flex-row gap-4">
-              <div className="relative flex-1">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-                <input
-                  type="text"
-                  placeholder="Search by name or ID..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="input-field pl-12"
-                  data-testid="member-search-input"
-                />
-              </div>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-full md:w-48 rounded-2xl border-2 border-slate-200" data-testid="status-filter">
-                  <SelectValue placeholder="All Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="Active">Active</SelectItem>
-                  <SelectItem value="Inactive">Inactive</SelectItem>
-                  <SelectItem value="Hold">On Hold</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          {/* Members Table */}
-          <div className="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
-            {loading ? (
-              <div className="p-12 text-center">
-                <div className="w-12 h-12 border-4 border-sky-500 border-t-transparent rounded-full animate-spin mx-auto" />
-              </div>
-            ) : members.length === 0 ? (
-              <div className="p-12 text-center">
-                <Users className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-                <p className="text-slate-500">No members found</p>
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full" data-testid="members-table">
-                  <thead className="bg-slate-50 border-b border-slate-200">
-                    <tr>
-                      <th className="text-left px-6 py-4 text-sm font-bold text-slate-600">Member</th>
-                      <th className="text-left px-6 py-4 text-sm font-bold text-slate-600">ID</th>
-                      <th className="text-left px-6 py-4 text-sm font-bold text-slate-600">Status</th>
-                      <th className="text-right px-6 py-4 text-sm font-bold text-slate-600">Balance</th>
-                      <th className="text-right px-6 py-4 text-sm font-bold text-slate-600">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {members.map((member) => (
-                      <tr key={member.member_id} className="hover:bg-slate-50 transition-colors" data-testid={`member-row-${member.member_id}`}>
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-sky-100 rounded-full flex items-center justify-center">
-                              <span className="text-sky-600 font-bold">{member.first_name?.[0]?.toUpperCase()}</span>
-                            </div>
-                            <div>
-                              <p className="font-bold text-slate-900">{member.display_name}</p>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 text-slate-600">{member.member_id}</td>
-                        <td className="px-6 py-4">
-                          <span className={`px-3 py-1 rounded-full text-xs font-bold ${
-                            member.status === 'Active' ? 'bg-emerald-100 text-emerald-700' :
-                            member.status === 'Inactive' ? 'bg-slate-100 text-slate-600' :
-                            'bg-amber-100 text-amber-700'
-                          }`}>
-                            {member.status}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 text-right">
-                          <span className="font-black text-amber-500" style={{ fontFamily: 'Nunito, sans-serif' }}>
-                            {member.current_balance?.toLocaleString()}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex items-center justify-end gap-2">
-                            <button
-                              onClick={() => { setSelectedMember(member); setShowTransactionModal(true); }}
-                              className="p-2 text-emerald-500 hover:bg-emerald-50 rounded-xl transition-colors"
-                              title="Add Transaction"
-                              data-testid={`add-txn-${member.member_id}`}
-                            >
-                              <Plus className="w-5 h-5" strokeWidth={2.5} />
-                            </button>
-                            <button
-                              onClick={() => handleShowQR(member)}
-                              className="p-2 text-sky-500 hover:bg-sky-50 rounded-xl transition-colors"
-                              title="Show QR"
-                              data-testid={`show-qr-${member.member_id}`}
-                            >
-                              <QrCode className="w-5 h-5" strokeWidth={2.5} />
-                            </button>
-                            <Link
-                              to={`/members/${member.member_id}/edit`}
-                              className="p-2 text-slate-400 hover:bg-slate-100 rounded-xl transition-colors"
-                              title="Edit"
-                              data-testid={`edit-${member.member_id}`}
-                            >
-                              <Edit2 className="w-5 h-5" strokeWidth={2.5} />
-                            </Link>
-                            <button
-                              onClick={() => handleDeleteMember(member.member_id)}
-                              className="p-2 text-rose-400 hover:bg-rose-50 rounded-xl transition-colors"
-                              title="Delete"
-                              data-testid={`delete-${member.member_id}`}
-                            >
-                              <Trash2 className="w-5 h-5" strokeWidth={2.5} />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-full md:w-48 rounded-2xl border-2 border-slate-200" data-testid="status-filter">
+              <SelectValue placeholder="All Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Status</SelectItem>
+              <SelectItem value="Active">Active</SelectItem>
+              <SelectItem value="Inactive">Inactive</SelectItem>
+              <SelectItem value="Hold">On Hold</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
-      </main>
+      </div>
+
+      {/* Members Table */}
+      <div className="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
+        {loading ? (
+          <div className="p-12 text-center">
+            <div className="w-12 h-12 border-4 border-sky-500 border-t-transparent rounded-full animate-spin mx-auto" />
+          </div>
+        ) : members.length === 0 ? (
+          <div className="p-12 text-center">
+            <Users className="w-12 h-12 text-slate-300 mx-auto mb-4" />
+            <p className="text-slate-500">No members found</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full" data-testid="members-table">
+              <thead className="bg-slate-50 border-b border-slate-200">
+                <tr>
+                  <th className="text-left px-6 py-4 text-sm font-bold text-slate-600">Member</th>
+                  <th className="text-left px-6 py-4 text-sm font-bold text-slate-600">ID</th>
+                  <th className="text-left px-6 py-4 text-sm font-bold text-slate-600">Status</th>
+                  <th className="text-right px-6 py-4 text-sm font-bold text-slate-600">Balance</th>
+                  <th className="text-right px-6 py-4 text-sm font-bold text-slate-600">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {members.map((member) => (
+                  <tr key={member.member_id} className="hover:bg-slate-50 transition-colors" data-testid={`member-row-${member.member_id}`}>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-sky-100 rounded-full flex items-center justify-center">
+                          <span className="text-sky-600 font-bold">{member.first_name?.[0]?.toUpperCase()}</span>
+                        </div>
+                        <div>
+                          <p className="font-bold text-slate-900">{member.display_name}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-slate-600">{member.member_id}</td>
+                    <td className="px-6 py-4">
+                      <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+                        member.status === 'Active' ? 'bg-emerald-100 text-emerald-700' :
+                        member.status === 'Inactive' ? 'bg-slate-100 text-slate-600' :
+                        'bg-amber-100 text-amber-700'
+                      }`}>
+                        {member.status}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <span className="font-black text-amber-500" style={{ fontFamily: 'Nunito, sans-serif' }}>
+                        {member.current_balance?.toLocaleString()}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center justify-end gap-2">
+                        <button
+                          onClick={() => { setSelectedMember(member); setShowTransactionModal(true); }}
+                          className="p-2 text-emerald-500 hover:bg-emerald-50 rounded-xl transition-colors"
+                          title="Add Transaction"
+                          data-testid={`add-txn-${member.member_id}`}
+                        >
+                          <Plus className="w-5 h-5" strokeWidth={2.5} />
+                        </button>
+                        <button
+                          onClick={() => handleShowQR(member)}
+                          className="p-2 text-sky-500 hover:bg-sky-50 rounded-xl transition-colors"
+                          title="Show QR"
+                          data-testid={`show-qr-${member.member_id}`}
+                        >
+                          <QrCode className="w-5 h-5" strokeWidth={2.5} />
+                        </button>
+                        <Link
+                          to={`/members/${member.member_id}/edit`}
+                          className="p-2 text-slate-400 hover:bg-slate-100 rounded-xl transition-colors"
+                          title="Edit"
+                          data-testid={`edit-${member.member_id}`}
+                        >
+                          <Edit2 className="w-5 h-5" strokeWidth={2.5} />
+                        </Link>
+                        <button
+                          onClick={() => handleDeleteMember(member.member_id)}
+                          className="p-2 text-rose-400 hover:bg-rose-50 rounded-xl transition-colors"
+                          title="Delete"
+                          data-testid={`delete-${member.member_id}`}
+                        >
+                          <Trash2 className="w-5 h-5" strokeWidth={2.5} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
 
       {/* QR Modal */}
       {showQRModal && qrData && (
@@ -418,7 +354,7 @@ const MembersPage = () => {
           </div>
         </div>
       )}
-    </div>
+    </AdminLayout>
   );
 };
 

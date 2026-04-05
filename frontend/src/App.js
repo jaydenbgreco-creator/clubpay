@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { SettingsProvider } from './context/SettingsContext';
+import { ClubProvider } from './context/ClubContext';
 import { Toaster } from 'sonner';
 
 // Pages
@@ -20,6 +21,7 @@ import StudentDashboard from './pages/StudentDashboard';
 import ParentDashboard from './pages/ParentDashboard';
 import StaffManagementPage from './pages/StaffManagementPage';
 import SettingsPage from './pages/SettingsPage';
+import ClubManagementPage from './pages/ClubManagementPage';
 
 import './App.css';
 
@@ -150,6 +152,11 @@ function AppRouter() {
           <SettingsPage />
         </ProtectedRoute>
       } />
+      <Route path="/admin/clubs" element={
+        <ProtectedRoute allowedRoles={['admin']}>
+          <ClubManagementPage />
+        </ProtectedRoute>
+      } />
 
       {/* Student Routes */}
       <Route path="/student" element={
@@ -176,18 +183,20 @@ function App() {
   return (
     <SettingsProvider>
       <AuthProvider>
-        <BrowserRouter>
-          <AppRouter />
-          <Toaster 
-            position="top-right" 
-            toastOptions={{
-              style: {
-                borderRadius: '16px',
-                fontFamily: 'DM Sans, sans-serif'
-              }
-            }}
-          />
-        </BrowserRouter>
+        <ClubProvider>
+          <BrowserRouter>
+            <AppRouter />
+            <Toaster 
+              position="top-right" 
+              toastOptions={{
+                style: {
+                  borderRadius: '16px',
+                  fontFamily: 'DM Sans, sans-serif'
+                }
+              }}
+            />
+          </BrowserRouter>
+        </ClubProvider>
       </AuthProvider>
     </SettingsProvider>
   );

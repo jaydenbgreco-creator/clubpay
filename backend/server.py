@@ -145,6 +145,7 @@ class MemberCreate(BaseModel):
     member_id: str
     first_name: str
     last_name: str
+    club_id: Optional[str] = None
     status: str = "Active"
     starting_balance: float = 0
     notes: Optional[str] = None
@@ -162,6 +163,8 @@ class MemberResponse(BaseModel):
     first_name: str
     last_name: str
     display_name: str
+    club_id: Optional[str] = None
+    club_name: Optional[str] = None
     status: str
     starting_balance: float
     earned: float
@@ -178,6 +181,7 @@ class TransactionCreate(BaseModel):
     type: str  # earn, spend, bonus, adjustment
     category: str
     amount: float
+    club_id: Optional[str] = None
     notes: Optional[str] = None
     staff_initials: Optional[str] = None
 
@@ -188,6 +192,7 @@ class TransactionResponse(BaseModel):
     type: str
     category: str
     amount: float
+    club_id: Optional[str] = None
     notes: Optional[str] = None
     staff_initials: Optional[str] = None
     created_at: str
@@ -212,6 +217,14 @@ class AppSettings(BaseModel):
     primary_color: str = "#0ea5e9"
     accent_color: str = "#f59e0b"
     theme: str = "light"
+
+class ClubCreate(BaseModel):
+    name: str
+    description: Optional[str] = None
+
+class ClubUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
 
 # ----------- Auth Routes -----------
 @api_router.post("/auth/register")
@@ -375,6 +388,18 @@ async def logout(response: Response):
 @api_router.get("/auth/me")
 async def get_me(request: Request):
     user = await get_current_user(request)
+    
+    # Get user's clubs
+    user_clubs = user.get("clubs", [])
+    is_super = user.get("is_super_admin", False) or user.get("role") == "admin"
+    
+    if is_super:
+        clubs = await db.clubs.find({}, {"_id": 0}).to_list(100)
+    elif user_clubs:
+        clubs = await db.clubs.find({"id": {"$in": user_clubs}}, {"_id": 0}).to_list(100)
+    else:
+        clubs = []
+    
     return {
         "id": user.get("_id") or user.get("user_id"),
         "user_id": user.get("user_id"),
@@ -382,7 +407,9 @@ async def get_me(request: Request):
         "name": user["name"],
         "role": user["role"],
         "member_id": user.get("member_id"),
-        "linked_children": user.get("linked_children", [])
+        "linked_children": user.get("linked_children", []),
+        "is_super_admin": is_super,
+        "clubs": clubs
     }
 
 @api_router.post("/auth/refresh")
@@ -623,12 +650,87 @@ async def update_settings(data: AppSettings, request: Request):
     settings_doc.pop("_id")
     return settings_doc
 
+# ----------- Club Routes -----------
+@api_router.get("/clubs")
+async def get_clubs(request: Request):
+    """Get clubs the user has access to"""
+    user = await get_current_user(request)
+    is_super = user.get("is_super_admin", False) or user.get("role") == "admin"
+    
+    if is_super:
+        clubs = await db.clubs.find({}, {"_id": 0}).to_list(100)
+    else:
+        user_clubs = user.get("clubs", [])
+        if user_clubs:
+            clubs = await db.clubs.find({"id": {"$in": user_clubs}}, {"_id": 0}).to_list(100)
+        else:
+            clubs = []
+    
+    # Add member count for each club
+    for club in clubs:
+        club["member_count"] = await db.members.count_documents({"club_id": club["id"]})
+    
+    return clubs
+
+@api_router.post("/clubs")
+async def create_club(data: ClubCreate, request: Request):
+    """Create a new club (super admin only)"""
+    user = await require_admin(request)
+    
+    club_doc = {
+        "id": str(uuid.uuid4()),
+        "name": data.name,
+        "description": data.description or "",
+        "created_by": user.get("email"),
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.clubs.insert_one(club_doc)
+    club_doc.pop("_id", None)
+    club_doc["member_count"] = 0
+    return club_doc
+
+@api_router.put("/clubs/{club_id}")
+async def update_club(club_id: str, data: ClubUpdate, request: Request):
+    """Update a club (admin only)"""
+    await require_admin(request)
+    
+    club = await db.clubs.find_one({"id": club_id})
+    if not club:
+        raise HTTPException(status_code=404, detail="Club not found")
+    
+    update_data = {k: v for k, v in data.model_dump().items() if v is not None}
+    if update_data:
+        await db.clubs.update_one({"id": club_id}, {"$set": update_data})
+    
+    updated = await db.clubs.find_one({"id": club_id}, {"_id": 0})
+    updated["member_count"] = await db.members.count_documents({"club_id": club_id})
+    return updated
+
+@api_router.delete("/clubs/{club_id}")
+async def delete_club(club_id: str, request: Request):
+    """Delete a club (admin only)"""
+    await require_admin(request)
+    
+    club = await db.clubs.find_one({"id": club_id})
+    if not club:
+        raise HTTPException(status_code=404, detail="Club not found")
+    
+    member_count = await db.members.count_documents({"club_id": club_id})
+    if member_count > 0:
+        raise HTTPException(status_code=400, detail=f"Cannot delete club with {member_count} members. Remove or reassign members first.")
+    
+    await db.clubs.delete_one({"id": club_id})
+    return {"message": "Club deleted"}
+
 # ----------- Member Routes -----------
 @api_router.get("/members", response_model=List[MemberResponse])
-async def get_members(request: Request, status: Optional[str] = None, search: Optional[str] = None):
+async def get_members(request: Request, status: Optional[str] = None, search: Optional[str] = None, club_id: Optional[str] = None):
     await get_current_user(request)
     
     query = {}
+    if club_id:
+        query["club_id"] = club_id
     if status:
         query["status"] = status
     if search:
@@ -653,12 +755,23 @@ async def get_member(member_id: str, request: Request):
 async def create_member(member: MemberCreate, request: Request):
     await require_admin_or_staff(request)
     
-    existing = await db.members.find_one({"member_id": member.member_id})
+    # Check uniqueness within the club
+    dup_query = {"member_id": member.member_id}
+    if member.club_id:
+        dup_query["club_id"] = member.club_id
+    existing = await db.members.find_one(dup_query)
     if existing:
-        raise HTTPException(status_code=400, detail="Member ID already exists")
+        raise HTTPException(status_code=400, detail="Member ID already exists in this club")
     
     display_name = f"{member.first_name} {member.last_name}".strip()
     qr_payload = f"CLUBPAY|{member.member_id}|{display_name}"
+    
+    # Get club name
+    club_name = None
+    if member.club_id:
+        club = await db.clubs.find_one({"id": member.club_id}, {"_id": 0})
+        if club:
+            club_name = club["name"]
     
     member_doc = {
         "id": str(uuid.uuid4()),
@@ -666,6 +779,8 @@ async def create_member(member: MemberCreate, request: Request):
         "first_name": member.first_name,
         "last_name": member.last_name,
         "display_name": display_name,
+        "club_id": member.club_id,
+        "club_name": club_name,
         "status": member.status,
         "starting_balance": member.starting_balance,
         "earned": 0,
@@ -716,14 +831,24 @@ async def delete_member(member_id: str, request: Request):
     return {"message": "Member deleted"}
 
 @api_router.post("/members/bulk-import")
-async def bulk_import_members(data: BulkMemberImport, request: Request):
+async def bulk_import_members(data: BulkMemberImport, request: Request, club_id: Optional[str] = None):
     await require_admin_or_staff(request)
+    
+    club_name = None
+    if club_id:
+        club = await db.clubs.find_one({"id": club_id}, {"_id": 0})
+        if club:
+            club_name = club["name"]
     
     imported = 0
     skipped = 0
     
     for member in data.members:
-        existing = await db.members.find_one({"member_id": member.member_id})
+        cid = member.club_id or club_id
+        dup_query = {"member_id": member.member_id}
+        if cid:
+            dup_query["club_id"] = cid
+        existing = await db.members.find_one(dup_query)
         if existing:
             skipped += 1
             continue
@@ -737,6 +862,8 @@ async def bulk_import_members(data: BulkMemberImport, request: Request):
             "first_name": member.first_name,
             "last_name": member.last_name,
             "display_name": display_name,
+            "club_id": cid,
+            "club_name": club_name,
             "status": member.status,
             "starting_balance": member.starting_balance,
             "earned": 0,
@@ -755,9 +882,19 @@ async def bulk_import_members(data: BulkMemberImport, request: Request):
     return {"imported": imported, "skipped": skipped}
 
 @api_router.post("/members/upload-csv")
-async def upload_csv_members(request: Request, file: UploadFile = File(...)):
+async def upload_csv_members(request: Request, file: UploadFile = File(...), club_id: Optional[str] = None):
     """Bulk import members from CSV file"""
     await require_admin_or_staff(request)
+    
+    # Get club_id from query param if not in form
+    if not club_id:
+        club_id = request.query_params.get("club_id")
+    
+    club_name = None
+    if club_id:
+        club = await db.clubs.find_one({"id": club_id}, {"_id": 0})
+        if club:
+            club_name = club["name"]
     
     if not file.filename.endswith('.csv'):
         raise HTTPException(status_code=400, detail="File must be a CSV")
@@ -781,7 +918,7 @@ async def upload_csv_members(request: Request, file: UploadFile = File(...)):
                 errors.append(f"Row {row_num}: Missing member_id or first_name")
                 continue
             
-            existing = await db.members.find_one({"member_id": member_id})
+            existing = await db.members.find_one({"member_id": member_id, "club_id": club_id} if club_id else {"member_id": member_id})
             if existing:
                 skipped += 1
                 continue
@@ -802,6 +939,8 @@ async def upload_csv_members(request: Request, file: UploadFile = File(...)):
                 "first_name": first_name,
                 "last_name": last_name,
                 "display_name": display_name,
+                "club_id": club_id,
+                "club_name": club_name,
                 "status": status,
                 "starting_balance": starting_balance,
                 "earned": 0,
@@ -826,11 +965,15 @@ async def upload_csv_members(request: Request, file: UploadFile = File(...)):
     }
 
 @api_router.get("/members/export")
-async def export_members_csv(request: Request):
+async def export_members_csv(request: Request, club_id: Optional[str] = None):
     """Export all members to CSV"""
     await require_admin_or_staff(request)
     
-    members = await db.members.find({}, {"_id": 0}).to_list(10000)
+    query = {}
+    if club_id:
+        query["club_id"] = club_id
+    
+    members = await db.members.find(query, {"_id": 0}).to_list(10000)
     
     output = StringIO()
     fieldnames = ['member_id', 'first_name', 'last_name', 'display_name', 'status', 
@@ -853,13 +996,15 @@ async def export_members_csv(request: Request):
     )
 
 @api_router.get("/transactions/export")
-async def export_transactions_csv(request: Request, member_id: Optional[str] = None):
+async def export_transactions_csv(request: Request, member_id: Optional[str] = None, club_id: Optional[str] = None):
     """Export transactions to CSV"""
     await require_admin_or_staff(request)
     
     query = {}
     if member_id:
         query["member_id"] = member_id
+    if club_id:
+        query["club_id"] = club_id
     
     transactions = await db.transactions.find(query, {"_id": 0}).sort("created_at", -1).to_list(50000)
     
@@ -892,6 +1037,7 @@ async def get_transactions(
     request: Request,
     member_id: Optional[str] = None,
     type: Optional[str] = None,
+    club_id: Optional[str] = None,
     limit: int = 100
 ):
     await get_current_user(request)
@@ -901,6 +1047,8 @@ async def get_transactions(
         query["member_id"] = member_id
     if type:
         query["type"] = type
+    if club_id:
+        query["club_id"] = club_id
     
     transactions = await db.transactions.find(query, {"_id": 0}).sort("created_at", -1).to_list(limit)
     return transactions
@@ -909,7 +1057,10 @@ async def get_transactions(
 async def create_transaction(txn: TransactionCreate, request: Request):
     user = await require_admin_or_staff(request)
     
-    member = await db.members.find_one({"member_id": txn.member_id})
+    member_query = {"member_id": txn.member_id}
+    if txn.club_id:
+        member_query["club_id"] = txn.club_id
+    member = await db.members.find_one(member_query)
     if not member:
         raise HTTPException(status_code=404, detail="Member not found")
     
@@ -928,6 +1079,7 @@ async def create_transaction(txn: TransactionCreate, request: Request):
         "type": txn.type,
         "category": txn.category,
         "amount": signed_amount,
+        "club_id": txn.club_id or member.get("club_id"),
         "notes": txn.notes,
         "staff_initials": txn.staff_initials or user.get("name", "")[:2].upper(),
         "created_at": datetime.now(timezone.utc).isoformat()
@@ -957,10 +1109,13 @@ async def create_transaction(txn: TransactionCreate, request: Request):
     return txn_doc
 
 @api_router.post("/transactions/quick")
-async def quick_transaction(request: Request, member_id: str, amount: float, type: str = "earn"):
+async def quick_transaction(request: Request, member_id: str, amount: float, type: str = "earn", club_id: Optional[str] = None):
     user = await require_admin_or_staff(request)
     
-    member = await db.members.find_one({"member_id": member_id})
+    member_query = {"member_id": member_id}
+    if club_id:
+        member_query["club_id"] = club_id
+    member = await db.members.find_one(member_query)
     if not member:
         raise HTTPException(status_code=404, detail="Member not found")
     
@@ -973,6 +1128,7 @@ async def quick_transaction(request: Request, member_id: str, amount: float, typ
         "type": type,
         "category": "Quick Transaction",
         "amount": signed_amount,
+        "club_id": club_id or member.get("club_id"),
         "notes": "Quick transaction from scan station",
         "staff_initials": user.get("name", "")[:2].upper(),
         "created_at": datetime.now(timezone.utc).isoformat()
@@ -984,7 +1140,7 @@ async def quick_transaction(request: Request, member_id: str, amount: float, typ
     new_balance = member["current_balance"] + signed_amount
     
     await db.members.update_one(
-        {"member_id": member_id},
+        {"member_id": member_id, "club_id": member.get("club_id")},
         {"$inc": {"current_balance": signed_amount, update_field: abs(signed_amount) if type != "adjustment" else signed_amount}}
     )
     
@@ -992,11 +1148,15 @@ async def quick_transaction(request: Request, member_id: str, amount: float, typ
 
 # ----------- Dashboard Routes -----------
 @api_router.get("/dashboard/stats")
-async def get_dashboard_stats(request: Request):
+async def get_dashboard_stats(request: Request, club_id: Optional[str] = None):
     await get_current_user(request)
     
+    match_query = {"status": "Active"}
+    if club_id:
+        match_query["club_id"] = club_id
+    
     pipeline = [
-        {"$match": {"status": "Active"}},
+        {"$match": match_query},
         {"$group": {
             "_id": None,
             "total_members": {"$sum": 1},
@@ -1027,9 +1187,10 @@ async def get_dashboard_stats(request: Request):
     
     # Get today's transaction count
     today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
-    txn_count = await db.transactions.count_documents({
-        "created_at": {"$gte": today_start.isoformat()}
-    })
+    txn_query = {"created_at": {"$gte": today_start.isoformat()}}
+    if club_id:
+        txn_query["club_id"] = club_id
+    txn_count = await db.transactions.count_documents(txn_query)
     
     return {
         "active_members": stats["total_members"],
@@ -1043,22 +1204,30 @@ async def get_dashboard_stats(request: Request):
     }
 
 @api_router.get("/dashboard/leaderboard")
-async def get_leaderboard(request: Request, limit: int = 10):
+async def get_leaderboard(request: Request, limit: int = 10, club_id: Optional[str] = None):
     await get_current_user(request)
     
+    query = {"status": "Active"}
+    if club_id:
+        query["club_id"] = club_id
+    
     leaders = await db.members.find(
-        {"status": "Active"},
+        query,
         {"_id": 0, "member_id": 1, "display_name": 1, "current_balance": 1}
     ).sort("current_balance", -1).to_list(limit)
     
     return leaders
 
 @api_router.get("/dashboard/recent-transactions")
-async def get_recent_transactions(request: Request, limit: int = 10):
+async def get_recent_transactions(request: Request, limit: int = 10, club_id: Optional[str] = None):
     await get_current_user(request)
     
+    query = {}
+    if club_id:
+        query["club_id"] = club_id
+    
     transactions = await db.transactions.find(
-        {},
+        query,
         {"_id": 0}
     ).sort("created_at", -1).to_list(limit)
     
@@ -1142,8 +1311,58 @@ async def startup_event():
     await db.users.create_index("user_id", sparse=True)
     await db.user_sessions.create_index("user_id")
     await db.user_sessions.create_index("session_token")
-    await db.members.create_index("member_id", unique=True)
+    await db.members.create_index([("member_id", 1), ("club_id", 1)])
     await db.login_attempts.create_index("identifier")
+    await db.clubs.create_index("id", unique=True)
+    
+    # Drop old unique index on member_id alone if it exists
+    try:
+        existing_indexes = await db.members.index_information()
+        if "member_id_1" in existing_indexes:
+            await db.members.drop_index("member_id_1")
+            logger.info("Dropped old member_id unique index")
+    except Exception as e:
+        logger.info(f"Index cleanup note: {e}")
+    
+    # Create default JAMS Club if no clubs exist
+    clubs_count = await db.clubs.count_documents({})
+    if clubs_count == 0:
+        jams_club = {
+            "id": "jams-club",
+            "name": "JAMS Club",
+            "description": "Main afterschool program club",
+            "created_by": "system",
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        await db.clubs.insert_one(jams_club)
+        logger.info("Created default JAMS Club")
+    
+    # Migrate existing members without club_id
+    members_without_club = await db.members.count_documents({"club_id": {"$exists": False}})
+    if members_without_club > 0:
+        await db.members.update_many(
+            {"club_id": {"$exists": False}},
+            {"$set": {"club_id": "jams-club", "club_name": "JAMS Club"}}
+        )
+        logger.info(f"Migrated {members_without_club} members to JAMS Club")
+    
+    # Also migrate members with null club_id
+    members_null_club = await db.members.count_documents({"club_id": None})
+    if members_null_club > 0:
+        await db.members.update_many(
+            {"club_id": None},
+            {"$set": {"club_id": "jams-club", "club_name": "JAMS Club"}}
+        )
+        logger.info(f"Migrated {members_null_club} null-club members to JAMS Club")
+    
+    # Migrate existing transactions without club_id
+    txn_without_club = await db.transactions.count_documents({"club_id": {"$exists": False}})
+    if txn_without_club > 0:
+        await db.transactions.update_many(
+            {"club_id": {"$exists": False}},
+            {"$set": {"club_id": "jams-club"}}
+        )
+        logger.info(f"Migrated {txn_without_club} transactions to JAMS Club")
     
     # Seed admin
     admin_email = os.environ.get("ADMIN_EMAIL", "admin@clubbucks.com")
@@ -1158,17 +1377,23 @@ async def startup_event():
             "password_hash": hashed,
             "name": "Admin",
             "role": "admin",
+            "is_super_admin": True,
+            "clubs": [],
             "member_id": None,
             "linked_children": [],
             "created_at": datetime.now(timezone.utc).isoformat()
         })
         logger.info(f"Admin user created: {admin_email}")
-    elif not existing.get("password_hash") or not verify_password(admin_password, existing["password_hash"]):
+    else:
+        # Ensure admin has super_admin flag and correct password
+        update_fields = {"is_super_admin": True}
+        if not existing.get("password_hash") or not verify_password(admin_password, existing["password_hash"]):
+            update_fields["password_hash"] = hash_password(admin_password)
+            logger.info("Admin password updated")
         await db.users.update_one(
             {"email": admin_email},
-            {"$set": {"password_hash": hash_password(admin_password)}}
+            {"$set": update_fields}
         )
-        logger.info(f"Admin password updated")
     
     # Write test credentials
     creds_path = Path("/app/memory/test_credentials.md")
@@ -1178,7 +1403,11 @@ async def startup_event():
 ## Admin Account
 - Email: {admin_email}
 - Password: {admin_password}
-- Role: admin
+- Role: admin (super admin)
+
+## Default Club
+- Name: JAMS Club
+- ID: jams-club
 
 ## Google OAuth
 - Any Google account can sign in

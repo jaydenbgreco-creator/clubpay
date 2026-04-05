@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useClub } from '../context/ClubContext';
 import { qrApi, transactionsApi, membersApi } from '../services/api';
 import {
   Coins, Scan, Camera, Plus, Minus, X, CheckCircle, AlertCircle,
@@ -11,6 +12,7 @@ import { Html5QrcodeScanner } from 'html5-qrcode';
 
 const ScannerPage = () => {
   const { user, logout } = useAuth();
+  const { activeClub } = useClub();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [scanning, setScanning] = useState(false);
@@ -52,7 +54,9 @@ const ScannerPage = () => {
     searchTimeoutRef.current = setTimeout(async () => {
       setSearching(true);
       try {
-        const response = await membersApi.getAll({ search: searchQuery });
+        const params = { search: searchQuery };
+        if (activeClub?.id) params.club_id = activeClub.id;
+        const response = await membersApi.getAll(params);
         setSearchResults(response.data.slice(0, 8)); // Limit to 8 results
         setShowDropdown(true);
       } catch (error) {
@@ -149,7 +153,8 @@ const ScannerPage = () => {
       const response = await transactionsApi.quick(
         scannedMember.member_id,
         parseFloat(amount),
-        transactionType
+        transactionType,
+        activeClub?.id
       );
       toast.success(`${transactionType === 'earn' ? 'Added' : 'Deducted'} ${amount} bucks!`);
       setScannedMember({ ...scannedMember, current_balance: response.data.new_balance });

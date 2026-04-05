@@ -2,34 +2,41 @@ import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useSettings } from '../context/SettingsContext';
+import { useClub } from '../context/ClubContext';
 import { dashboardApi, membersApi, transactionsApi } from '../services/api';
 import {
   Coins, Users, TrendingUp, ArrowUpRight, ArrowDownRight,
   QrCode, Plus, LogOut, LayoutDashboard, Trophy, Scan,
-  UserPlus, History, Menu, X, ChevronRight, Shield, Settings
+  UserPlus, History, Menu, X, ChevronRight, Shield, Settings,
+  Building2, ChevronDown
 } from 'lucide-react';
 
 const AdminDashboard = () => {
   const { user, logout, isAdmin } = useAuth();
   const { settings } = useSettings();
+  const { clubs, activeClub, switchClub } = useClub();
   const navigate = useNavigate();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [clubDropdownOpen, setClubDropdownOpen] = useState(false);
   const [stats, setStats] = useState(null);
   const [leaderboard, setLeaderboard] = useState([]);
   const [recentTransactions, setRecentTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadDashboardData();
-  }, []);
+    if (activeClub) {
+      loadDashboardData();
+    }
+  }, [activeClub]);
 
   const loadDashboardData = async () => {
     try {
+      const clubId = activeClub?.id;
       const [statsRes, leaderboardRes, transactionsRes] = await Promise.all([
-        dashboardApi.getStats(),
-        dashboardApi.getLeaderboard(5),
-        dashboardApi.getRecentTransactions(5)
+        dashboardApi.getStats(clubId),
+        dashboardApi.getLeaderboard(5, clubId),
+        dashboardApi.getRecentTransactions(5, clubId)
       ]);
       setStats(statsRes.data);
       setLeaderboard(leaderboardRes.data);
@@ -57,6 +64,7 @@ const AdminDashboard = () => {
   // Add admin-only items
   const navItems = isAdmin 
     ? [...baseNavItems, 
+        { path: '/admin/clubs', icon: Building2, label: 'Clubs' },
         { path: '/admin/staff', icon: Shield, label: 'Staff' },
         { path: '/admin/settings', icon: Settings, label: 'Settings' }
       ]
@@ -125,6 +133,44 @@ const AdminDashboard = () => {
             </div>
           </div>
         </div>
+
+        {/* Club Selector */}
+        {clubs.length > 0 && (
+          <div className="px-4 mb-3">
+            <div className="relative">
+              <button
+                onClick={() => setClubDropdownOpen(!clubDropdownOpen)}
+                className="w-full flex items-center justify-between px-4 py-2.5 rounded-2xl bg-slate-50 hover:bg-slate-100 transition-colors text-left"
+                data-testid="club-selector"
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  <Building2 className="w-4 h-4 text-slate-400 flex-shrink-0" />
+                  <span className="font-bold text-sm text-slate-700 truncate">{activeClub?.name || 'Select Club'}</span>
+                </div>
+                <ChevronDown className={`w-4 h-4 text-slate-400 flex-shrink-0 transition-transform ${clubDropdownOpen ? 'rotate-180' : ''}`} />
+              </button>
+              {clubDropdownOpen && (
+                <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-2xl shadow-lg border border-slate-200 z-50 py-1 max-h-48 overflow-y-auto">
+                  {clubs.map((club) => (
+                    <button
+                      key={club.id}
+                      onClick={() => { switchClub(club); setClubDropdownOpen(false); }}
+                      className={`w-full text-left px-4 py-2.5 text-sm font-medium transition-colors ${
+                        activeClub?.id === club.id
+                          ? 'bg-sky-50 text-sky-700'
+                          : 'text-slate-600 hover:bg-slate-50'
+                      }`}
+                      data-testid={`club-option-${club.id}`}
+                    >
+                      {club.name}
+                      <span className="text-xs text-slate-400 ml-2">({club.member_count || 0})</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         <nav className="px-4 space-y-1">
           {navItems.map((item) => (

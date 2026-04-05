@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { membersApi } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { useClub } from '../context/ClubContext';
 import {
   Coins, Users, ChevronLeft, Save, LayoutDashboard, History, Trophy, Scan, LogOut, Menu
 } from 'lucide-react';
@@ -9,6 +10,7 @@ import { toast } from 'sonner';
 
 const AddMemberPage = () => {
   const { user, logout } = useAuth();
+  const { activeClub } = useClub();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -30,7 +32,7 @@ const AddMemberPage = () => {
     
     setLoading(true);
     try {
-      await membersApi.create(formData);
+      await membersApi.create({ ...formData, club_id: activeClub?.id });
       toast.success('Member created successfully');
       navigate('/members');
     } catch (error) {
