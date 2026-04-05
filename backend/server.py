@@ -2,6 +2,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from fastapi import FastAPI, APIRouter, HTTPException, Request, Response, Depends, UploadFile, File
+from fastapi.responses import Response as FastAPIResponse
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
@@ -823,6 +824,67 @@ async def upload_csv_members(request: Request, file: UploadFile = File(...)):
         "skipped": skipped,
         "errors": errors[:10] if errors else []
     }
+
+@api_router.get("/members/export")
+async def export_members_csv(request: Request):
+    """Export all members to CSV"""
+    await require_admin_or_staff(request)
+    
+    members = await db.members.find({}, {"_id": 0}).to_list(10000)
+    
+    output = StringIO()
+    fieldnames = ['member_id', 'first_name', 'last_name', 'display_name', 'status', 
+                  'starting_balance', 'earned', 'bonus', 'spent', 'adjustments', 
+                  'current_balance', 'notes', 'created_at']
+    writer = csv.DictWriter(output, fieldnames=fieldnames, extrasaction='ignore')
+    writer.writeheader()
+    
+    for member in members:
+        writer.writerow(member)
+    
+    csv_content = output.getvalue()
+    
+    return Response(
+        content=csv_content,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": f"attachment; filename=members_export_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+        }
+    )
+
+@api_router.get("/transactions/export")
+async def export_transactions_csv(request: Request, member_id: Optional[str] = None):
+    """Export transactions to CSV"""
+    await require_admin_or_staff(request)
+    
+    query = {}
+    if member_id:
+        query["member_id"] = member_id
+    
+    transactions = await db.transactions.find(query, {"_id": 0}).sort("created_at", -1).to_list(50000)
+    
+    output = StringIO()
+    fieldnames = ['id', 'member_id', 'member_name', 'type', 'category', 
+                  'amount', 'notes', 'staff_initials', 'created_at']
+    writer = csv.DictWriter(output, fieldnames=fieldnames, extrasaction='ignore')
+    writer.writeheader()
+    
+    for txn in transactions:
+        writer.writerow(txn)
+    
+    csv_content = output.getvalue()
+    
+    filename = f"transactions_export_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+    if member_id:
+        filename = f"transactions_{member_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+    
+    return Response(
+        content=csv_content,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": f"attachment; filename={filename}"
+        }
+    )
 
 # ----------- Transaction Routes -----------
 @api_router.get("/transactions", response_model=List[TransactionResponse])

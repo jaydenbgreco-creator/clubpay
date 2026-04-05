@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { transactionsApi } from '../services/api';
 import {
-  Coins, History, ArrowUpRight, ArrowDownRight, Filter,
+  Coins, History, ArrowUpRight, ArrowDownRight, Filter, Download,
   Users, LayoutDashboard, Trophy, Scan, LogOut, Menu, Calendar
 } from 'lucide-react';
 import {
@@ -138,6 +138,14 @@ const TransactionsPage = () => {
               </h2>
               <p className="text-slate-500">{transactions.length} total transactions</p>
             </div>
+            <a 
+              href={`${process.env.REACT_APP_BACKEND_URL}/api/transactions/export`}
+              className="btn-secondary flex items-center gap-2 w-fit"
+              data-testid="export-transactions-btn"
+            >
+              <Download className="w-5 h-5" strokeWidth={2.5} />
+              Export CSV
+            </a>
           </div>
 
           {/* Filter */}

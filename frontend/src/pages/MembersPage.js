@@ -187,7 +187,15 @@ const MembersPage = () => {
               </h2>
               <p className="text-slate-500">{members.length} total members</p>
             </div>
-            <div className="flex gap-3">
+            <div className="flex gap-3 flex-wrap">
+              <a 
+                href={`${process.env.REACT_APP_BACKEND_URL}/api/members/export`}
+                className="btn-secondary flex items-center gap-2"
+                data-testid="export-members-btn"
+              >
+                <Download className="w-5 h-5" strokeWidth={2.5} />
+                Export CSV
+              </a>
               <Link to="/members/import" className="btn-secondary flex items-center gap-2" data-testid="bulk-import-btn">
                 <Upload className="w-5 h-5" strokeWidth={2.5} />
                 Import CSV
