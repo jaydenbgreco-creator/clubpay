@@ -84,6 +84,10 @@ const PublicRoute = ({ children }) => {
   return children;
 };
 
+// Route role constants - extracted to prevent recreation on every render
+const ADMIN_ROLES = ['admin'];
+const STAFF_ROLES = ['admin', 'staff'];
+
 // Router component that handles OAuth callback synchronously
 function AppRouter() {
   const location = useLocation();
@@ -101,32 +105,32 @@ function AppRouter() {
 
       {/* Admin/Staff Routes */}
       <Route path="/dashboard" element={
-        <ProtectedRoute allowedRoles={['admin', 'staff']}>
+        <ProtectedRoute allowedRoles={STAFF_ROLES}>
           <AdminDashboard />
         </ProtectedRoute>
       } />
       <Route path="/members" element={
-        <ProtectedRoute allowedRoles={['admin', 'staff']}>
+        <ProtectedRoute allowedRoles={STAFF_ROLES}>
           <MembersPage />
         </ProtectedRoute>
       } />
       <Route path="/members/new" element={
-        <ProtectedRoute allowedRoles={['admin', 'staff']}>
+        <ProtectedRoute allowedRoles={STAFF_ROLES}>
           <AddMemberPage />
         </ProtectedRoute>
       } />
       <Route path="/members/:memberId/edit" element={
-        <ProtectedRoute allowedRoles={['admin', 'staff']}>
+        <ProtectedRoute allowedRoles={STAFF_ROLES}>
           <EditMemberPage />
         </ProtectedRoute>
       } />
       <Route path="/members/import" element={
-        <ProtectedRoute allowedRoles={['admin', 'staff']}>
+        <ProtectedRoute allowedRoles={STAFF_ROLES}>
           <BulkImportPage />
         </ProtectedRoute>
       } />
       <Route path="/transactions" element={
-        <ProtectedRoute allowedRoles={['admin', 'staff']}>
+        <ProtectedRoute allowedRoles={STAFF_ROLES}>
           <TransactionsPage />
         </ProtectedRoute>
       } />
@@ -136,24 +140,24 @@ function AppRouter() {
         </ProtectedRoute>
       } />
       <Route path="/scanner" element={
-        <ProtectedRoute allowedRoles={['admin', 'staff']}>
+        <ProtectedRoute allowedRoles={STAFF_ROLES}>
           <ScannerPage />
         </ProtectedRoute>
       } />
 
       {/* Admin Only Routes */}
       <Route path="/admin/staff" element={
-        <ProtectedRoute allowedRoles={['admin']}>
+        <ProtectedRoute allowedRoles={ADMIN_ROLES}>
           <StaffManagementPage />
         </ProtectedRoute>
       } />
       <Route path="/admin/settings" element={
-        <ProtectedRoute allowedRoles={['admin']}>
+        <ProtectedRoute allowedRoles={ADMIN_ROLES}>
           <SettingsPage />
         </ProtectedRoute>
       } />
       <Route path="/admin/clubs" element={
-        <ProtectedRoute allowedRoles={['admin']}>
+        <ProtectedRoute allowedRoles={ADMIN_ROLES}>
           <ClubManagementPage />
         </ProtectedRoute>
       } />

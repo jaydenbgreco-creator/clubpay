@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import axios from 'axios';
 import { useAuth } from './AuthContext';
 
@@ -27,7 +27,6 @@ export const ClubProvider = ({ children }) => {
       const clubList = response.data;
       setClubs(clubList);
 
-      // Restore last selected club from localStorage or pick first
       const savedClubId = localStorage.getItem('activeClubId');
       const saved = clubList.find(c => c.id === savedClubId);
       if (saved) {
@@ -36,8 +35,8 @@ export const ClubProvider = ({ children }) => {
         setActiveClub(clubList[0]);
         localStorage.setItem('activeClubId', clubList[0].id);
       }
-    } catch (error) {
-      console.error('Failed to load clubs:', error);
+    } catch {
+      // Failed to load clubs - keep defaults
     } finally {
       setLoading(false);
     }
@@ -47,23 +46,25 @@ export const ClubProvider = ({ children }) => {
     fetchClubs();
   }, [fetchClubs]);
 
-  const switchClub = (club) => {
+  const switchClub = useCallback((club) => {
     setActiveClub(club);
     localStorage.setItem('activeClubId', club.id);
-  };
+  }, []);
 
-  const refreshClubs = () => {
+  const refreshClubs = useCallback(() => {
     fetchClubs();
-  };
+  }, [fetchClubs]);
+
+  const contextValue = useMemo(() => ({
+    clubs,
+    activeClub,
+    switchClub,
+    refreshClubs,
+    loading
+  }), [clubs, activeClub, switchClub, refreshClubs, loading]);
 
   return (
-    <ClubContext.Provider value={{
-      clubs,
-      activeClub,
-      switchClub,
-      refreshClubs,
-      loading
-    }}>
+    <ClubContext.Provider value={contextValue}>
       {children}
     </ClubContext.Provider>
   );

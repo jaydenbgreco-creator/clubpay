@@ -33,7 +33,7 @@ const ScannerPage = () => {
   useEffect(() => {
     return () => {
       if (html5QrCodeRef.current) {
-        html5QrCodeRef.current.clear().catch(console.error);
+        html5QrCodeRef.current.clear().catch(() => {});
       }
     };
   }, []);
@@ -71,7 +71,7 @@ const ScannerPage = () => {
         clearTimeout(searchTimeoutRef.current);
       }
     };
-  }, [searchQuery]);
+  }, [searchQuery, activeClub]);
 
   // Close dropdown when clicking outside
   useEffect(() => {

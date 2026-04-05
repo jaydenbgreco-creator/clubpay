@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useClub } from '../context/ClubContext';
 import { dashboardApi } from '../services/api';
 import { Trophy, Crown, Medal, Award } from 'lucide-react';
@@ -9,20 +9,20 @@ const LeaderboardPage = () => {
   const [leaderboard, setLeaderboard] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadLeaderboard();
-  }, [activeClub]);
-
-  const loadLeaderboard = async () => {
+  const loadLeaderboard = useCallback(async () => {
     try {
       const response = await dashboardApi.getLeaderboard(50, activeClub?.id);
       setLeaderboard(response.data);
-    } catch (error) {
-      console.error('Failed to load leaderboard:', error);
+    } catch {
+      // Failed to load leaderboard
     } finally {
       setLoading(false);
     }
-  };
+  }, [activeClub]);
+
+  useEffect(() => {
+    loadLeaderboard();
+  }, [loadLeaderboard]);
 
   return (
     <AdminLayout>

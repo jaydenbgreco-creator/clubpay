@@ -16,8 +16,8 @@ import os
 BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')
 
 # Test credentials
-ADMIN_EMAIL = "admin@clubbucks.com"
-ADMIN_PASSWORD = "ClubBucks2024!"
+ADMIN_EMAIL = os.environ.get("ADMIN_EMAIL", "admin@clubbucks.com")
+ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "ClubBucks2024!")
 DEFAULT_CLUB_ID = "jams-club"
 
 

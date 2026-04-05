@@ -36,8 +36,8 @@ const ParentDashboard = () => {
         setSelectedChild(response.data[0]);
         loadChildTransactions(response.data[0].member_id);
       }
-    } catch (error) {
-      console.error('Failed to load children:', error);
+    } catch {
+      // Failed to load children
     } finally {
       setLoading(false);
     }
@@ -50,8 +50,8 @@ const ParentDashboard = () => {
         withCredentials: true
       });
       setChildTransactions(response.data);
-    } catch (error) {
-      console.error('Failed to load transactions:', error);
+    } catch {
+      // Failed to load transactions
     } finally {
       setLoadingTransactions(false);
     }

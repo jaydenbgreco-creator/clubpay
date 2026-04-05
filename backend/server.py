@@ -69,28 +69,41 @@ def create_refresh_token(user_id: str) -> str:
     }
     return jwt.encode(payload, get_jwt_secret(), algorithm=JWT_ALGORITHM)
 
-async def get_current_user(request: Request) -> dict:
-    # Check session_token cookie first (Google OAuth)
+async def _get_user_from_session(request: Request):
+    """Try to authenticate via session_token cookie (Google OAuth)."""
     session_token = request.cookies.get("session_token")
-    if session_token:
-        session = await db.user_sessions.find_one({"session_token": session_token}, {"_id": 0})
-        if session:
-            expires_at = session.get("expires_at")
-            if isinstance(expires_at, str):
-                expires_at = datetime.fromisoformat(expires_at)
-            if expires_at.tzinfo is None:
-                expires_at = expires_at.replace(tzinfo=timezone.utc)
-            if expires_at > datetime.now(timezone.utc):
-                user = await db.users.find_one({"user_id": session["user_id"]}, {"_id": 0})
-                if user:
-                    return user
-    
-    # Fall back to JWT access_token
+    if not session_token:
+        return None
+    session = await db.user_sessions.find_one({"session_token": session_token}, {"_id": 0})
+    if not session:
+        return None
+    expires_at = session.get("expires_at")
+    if isinstance(expires_at, str):
+        expires_at = datetime.fromisoformat(expires_at)
+    if expires_at.tzinfo is None:
+        expires_at = expires_at.replace(tzinfo=timezone.utc)
+    if expires_at <= datetime.now(timezone.utc):
+        return None
+    return await db.users.find_one({"user_id": session["user_id"]}, {"_id": 0})
+
+def _extract_jwt_token(request: Request):
+    """Extract JWT token from cookie or Authorization header."""
     token = request.cookies.get("access_token")
-    if not token:
-        auth_header = request.headers.get("Authorization", "")
-        if auth_header.startswith("Bearer "):
-            token = auth_header[7:]
+    if token:
+        return token
+    auth_header = request.headers.get("Authorization", "")
+    if auth_header.startswith("Bearer "):
+        return auth_header[7:]
+    return None
+
+async def get_current_user(request: Request) -> dict:
+    # Try session-based auth first (Google OAuth)
+    user = await _get_user_from_session(request)
+    if user:
+        return user
+    
+    # Fall back to JWT
+    token = _extract_jwt_token(request)
     if not token:
         raise HTTPException(status_code=401, detail="Not authenticated")
     try:
@@ -393,12 +406,11 @@ async def get_me(request: Request):
     user_clubs = user.get("clubs", [])
     is_super = user.get("is_super_admin", False) or user.get("role") == "admin"
     
+    clubs = []
     if is_super:
         clubs = await db.clubs.find({}, {"_id": 0}).to_list(100)
     elif user_clubs:
         clubs = await db.clubs.find({"id": {"$in": user_clubs}}, {"_id": 0}).to_list(100)
-    else:
-        clubs = []
     
     return {
         "id": user.get("_id") or user.get("user_id"),
@@ -1303,10 +1315,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Startup event
-@app.on_event("startup")
-async def startup_event():
-    # Create indexes
+# ----------- Startup Helpers -----------
+async def _create_indexes():
+    """Create all database indexes."""
     await db.users.create_index("email", unique=True)
     await db.users.create_index("user_id", sparse=True)
     await db.user_sessions.create_index("user_id")
@@ -1314,7 +1325,6 @@ async def startup_event():
     await db.members.create_index([("member_id", 1), ("club_id", 1)])
     await db.login_attempts.create_index("identifier")
     await db.clubs.create_index("id", unique=True)
-    
     # Drop old unique index on member_id alone if it exists
     try:
         existing_indexes = await db.members.index_information()
@@ -1323,58 +1333,43 @@ async def startup_event():
             logger.info("Dropped old member_id unique index")
     except Exception as e:
         logger.info(f"Index cleanup note: {e}")
-    
-    # Create default JAMS Club if no clubs exist
-    clubs_count = await db.clubs.count_documents({})
-    if clubs_count == 0:
-        jams_club = {
+
+async def _seed_default_club():
+    """Create default JAMS Club if no clubs exist."""
+    if await db.clubs.count_documents({}) == 0:
+        await db.clubs.insert_one({
             "id": "jams-club",
             "name": "JAMS Club",
             "description": "Main afterschool program club",
             "created_by": "system",
             "created_at": datetime.now(timezone.utc).isoformat()
-        }
-        await db.clubs.insert_one(jams_club)
+        })
         logger.info("Created default JAMS Club")
+
+async def _migrate_club_data():
+    """Migrate existing data to default club."""
+    for query in [{"club_id": {"$exists": False}}, {"club_id": None}]:
+        count = await db.members.count_documents(query)
+        if count > 0:
+            await db.members.update_many(query, {"$set": {"club_id": "jams-club", "club_name": "JAMS Club"}})
+            logger.info(f"Migrated {count} members to JAMS Club")
     
-    # Migrate existing members without club_id
-    members_without_club = await db.members.count_documents({"club_id": {"$exists": False}})
-    if members_without_club > 0:
-        await db.members.update_many(
-            {"club_id": {"$exists": False}},
-            {"$set": {"club_id": "jams-club", "club_name": "JAMS Club"}}
-        )
-        logger.info(f"Migrated {members_without_club} members to JAMS Club")
-    
-    # Also migrate members with null club_id
-    members_null_club = await db.members.count_documents({"club_id": None})
-    if members_null_club > 0:
-        await db.members.update_many(
-            {"club_id": None},
-            {"$set": {"club_id": "jams-club", "club_name": "JAMS Club"}}
-        )
-        logger.info(f"Migrated {members_null_club} null-club members to JAMS Club")
-    
-    # Migrate existing transactions without club_id
-    txn_without_club = await db.transactions.count_documents({"club_id": {"$exists": False}})
-    if txn_without_club > 0:
-        await db.transactions.update_many(
-            {"club_id": {"$exists": False}},
-            {"$set": {"club_id": "jams-club"}}
-        )
-        logger.info(f"Migrated {txn_without_club} transactions to JAMS Club")
-    
-    # Seed admin
+    txn_count = await db.transactions.count_documents({"club_id": {"$exists": False}})
+    if txn_count > 0:
+        await db.transactions.update_many({"club_id": {"$exists": False}}, {"$set": {"club_id": "jams-club"}})
+        logger.info(f"Migrated {txn_count} transactions to JAMS Club")
+
+async def _seed_admin():
+    """Seed admin user and write test credentials."""
     admin_email = os.environ.get("ADMIN_EMAIL", "admin@clubbucks.com")
     admin_password = os.environ.get("ADMIN_PASSWORD", "ClubBucks2024!")
     
     existing = await db.users.find_one({"email": admin_email})
     if existing is None:
-        hashed = hash_password(admin_password)
         await db.users.insert_one({
             "user_id": f"user_{uuid.uuid4().hex[:12]}",
             "email": admin_email,
-            "password_hash": hashed,
+            "password_hash": hash_password(admin_password),
             "name": "Admin",
             "role": "admin",
             "is_super_admin": True,
@@ -1385,17 +1380,12 @@ async def startup_event():
         })
         logger.info(f"Admin user created: {admin_email}")
     else:
-        # Ensure admin has super_admin flag and correct password
         update_fields = {"is_super_admin": True}
         if not existing.get("password_hash") or not verify_password(admin_password, existing["password_hash"]):
             update_fields["password_hash"] = hash_password(admin_password)
             logger.info("Admin password updated")
-        await db.users.update_one(
-            {"email": admin_email},
-            {"$set": update_fields}
-        )
+        await db.users.update_one({"email": admin_email}, {"$set": update_fields})
     
-    # Write test credentials
     creds_path = Path("/app/memory/test_credentials.md")
     creds_path.parent.mkdir(parents=True, exist_ok=True)
     creds_path.write_text(f"""# Test Credentials
@@ -1423,6 +1413,14 @@ async def startup_event():
 - POST /api/auth/refresh
 """)
     logger.info("Test credentials written")
+
+# Startup event
+@app.on_event("startup")
+async def startup_event():
+    await _create_indexes()
+    await _seed_default_club()
+    await _migrate_club_data()
+    await _seed_admin()
 
 @app.on_event("shutdown")
 async def shutdown_db_client():

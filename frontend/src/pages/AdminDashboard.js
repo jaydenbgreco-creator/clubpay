@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useSettings } from '../context/SettingsContext';
@@ -25,17 +25,11 @@ const AdminDashboard = () => {
   const [loading, setLoading] = useState(true);
 
   const primaryColor = settings?.primary_color || '#0080c6';
-  const accentColor = settings?.accent_color || '#84bd00';
 
-  useEffect(() => {
-    if (activeClub) {
-      loadDashboardData();
-    }
-  }, [activeClub]);
-
-  const loadDashboardData = async () => {
+  const loadDashboardData = useCallback(async () => {
+    if (!activeClub) return;
     try {
-      const clubId = activeClub?.id;
+      const clubId = activeClub.id;
       const [statsRes, leaderboardRes, transactionsRes] = await Promise.all([
         dashboardApi.getStats(clubId),
         dashboardApi.getLeaderboard(5, clubId),
@@ -44,12 +38,16 @@ const AdminDashboard = () => {
       setStats(statsRes.data);
       setLeaderboard(leaderboardRes.data);
       setRecentTransactions(transactionsRes.data);
-    } catch (error) {
-      console.error('Failed to load dashboard data:', error);
+    } catch {
+      // Dashboard data load failed silently
     } finally {
       setLoading(false);
     }
-  };
+  }, [activeClub]);
+
+  useEffect(() => {
+    loadDashboardData();
+  }, [loadDashboardData]);
 
   const handleLogout = async () => {
     await logout();

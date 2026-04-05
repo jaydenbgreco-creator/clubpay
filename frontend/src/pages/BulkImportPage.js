@@ -254,7 +254,7 @@ Mem-00002,Jane,Smith,Active,10,Transfer student`;
                     </p>
                     <ul className="text-sm text-rose-600 space-y-1">
                       {result.errors.map((err, i) => (
-                        <li key={i}>{err}</li>
+                        <li key={`err-${i}-${err.slice(0, 20)}`}>{err}</li>
                       ))}
                     </ul>
                   </div>

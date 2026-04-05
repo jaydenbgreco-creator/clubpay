@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useClub } from '../context/ClubContext';
 import { transactionsApi } from '../services/api';
 import {
@@ -15,23 +15,23 @@ const TransactionsPage = () => {
   const [loading, setLoading] = useState(true);
   const [typeFilter, setTypeFilter] = useState('all');
 
-  useEffect(() => {
-    loadTransactions();
-  }, [typeFilter, activeClub]);
-
-  const loadTransactions = async () => {
+  const loadTransactions = useCallback(async () => {
     try {
       const params = { limit: 200 };
       if (typeFilter && typeFilter !== 'all') params.type = typeFilter;
       if (activeClub?.id) params.club_id = activeClub.id;
       const response = await transactionsApi.getAll(params);
       setTransactions(response.data);
-    } catch (error) {
-      console.error('Failed to load transactions:', error);
+    } catch {
+      // Failed to load transactions
     } finally {
       setLoading(false);
     }
-  };
+  }, [typeFilter, activeClub]);
+
+  useEffect(() => {
+    loadTransactions();
+  }, [loadTransactions]);
 
   const getTransactionBadge = (type) => {
     const badges = {

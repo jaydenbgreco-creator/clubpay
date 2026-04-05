@@ -33,8 +33,7 @@ const StudentDashboard = () => {
       ]);
       setMember(memberRes.data);
       setTransactions(txnRes.data);
-    } catch (error) {
-      console.error('Failed to load student data:', error);
+    } catch {
     } finally {
       setLoading(false);
     }

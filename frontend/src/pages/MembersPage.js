@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useClub } from '../context/ClubContext';
@@ -44,11 +44,7 @@ const MembersPage = () => {
     adjustment: ['Correction', 'Transfer', 'Admin Adjustment', 'Other']
   };
 
-  useEffect(() => {
-    loadMembers();
-  }, [searchQuery, statusFilter, activeClub]);
-
-  const loadMembers = async () => {
+  const loadMembers = useCallback(async () => {
     try {
       const params = {};
       if (activeClub?.id) params.club_id = activeClub.id;
@@ -56,13 +52,16 @@ const MembersPage = () => {
       if (statusFilter && statusFilter !== 'all') params.status = statusFilter;
       const response = await membersApi.getAll(params);
       setMembers(response.data);
-    } catch (error) {
-      console.error('Failed to load members:', error);
+    } catch {
       toast.error('Failed to load members');
     } finally {
       setLoading(false);
     }
-  };
+  }, [activeClub, searchQuery, statusFilter]);
+
+  useEffect(() => {
+    loadMembers();
+  }, [loadMembers]);
 
   const handleShowQR = async (member) => {
     try {
