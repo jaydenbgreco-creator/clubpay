@@ -32,9 +32,11 @@ export const membersApi = {
 export const transactionsApi = {
   getAll: (params = {}) => api.get('/transactions', { params }),
   create: (data) => api.post('/transactions', data),
-  quick: (memberId, amount, type = 'earn', clubId) => {
+  quick: (memberId, amount, type = 'earn', clubId, category, notes) => {
     const params = { member_id: memberId, amount, type };
     if (clubId) params.club_id = clubId;
+    if (category) params.category = category;
+    if (notes) params.notes = notes;
     return api.post('/transactions/quick', null, { params });
   }
 };

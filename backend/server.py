@@ -1121,7 +1121,7 @@ async def create_transaction(txn: TransactionCreate, request: Request):
     return txn_doc
 
 @api_router.post("/transactions/quick")
-async def quick_transaction(request: Request, member_id: str, amount: float, type: str = "earn", club_id: Optional[str] = None):
+async def quick_transaction(request: Request, member_id: str, amount: float, type: str = "earn", category: Optional[str] = None, notes: Optional[str] = None, club_id: Optional[str] = None):
     user = await require_admin_or_staff(request)
     
     member_query = {"member_id": member_id}
@@ -1138,10 +1138,10 @@ async def quick_transaction(request: Request, member_id: str, amount: float, typ
         "member_id": member_id,
         "member_name": member["display_name"],
         "type": type,
-        "category": "Quick Transaction",
+        "category": category or "Quick Transaction",
         "amount": signed_amount,
         "club_id": club_id or member.get("club_id"),
-        "notes": "Quick transaction from scan station",
+        "notes": notes or "",
         "staff_initials": user.get("name", "")[:2].upper(),
         "created_at": datetime.now(timezone.utc).isoformat()
     }

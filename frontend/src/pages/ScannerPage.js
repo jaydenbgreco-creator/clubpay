@@ -19,6 +19,8 @@ const ScannerPage = () => {
   const [scannedMember, setScannedMember] = useState(null);
   const [amount, setAmount] = useState('');
   const [transactionType, setTransactionType] = useState('earn');
+  const [category, setCategory] = useState('');
+  const [notes, setNotes] = useState('');
   const [processing, setProcessing] = useState(false);
   const [showManualEntry, setShowManualEntry] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -100,7 +102,7 @@ const ScannerPage = () => {
           (decodedText) => {
             handleScan(decodedText);
             if (html5QrCodeRef.current) {
-              html5QrCodeRef.current.clear().catch(console.error);
+              html5QrCodeRef.current.clear().catch(() => {});
             }
           },
           (error) => {
@@ -113,7 +115,7 @@ const ScannerPage = () => {
 
   const stopScanner = () => {
     if (html5QrCodeRef.current) {
-      html5QrCodeRef.current.clear().catch(console.error);
+      html5QrCodeRef.current.clear().catch(() => {});
     }
     setScanning(false);
   };
@@ -154,11 +156,16 @@ const ScannerPage = () => {
         scannedMember.member_id,
         parseFloat(amount),
         transactionType,
-        activeClub?.id
+        activeClub?.id,
+        category || undefined,
+        notes || undefined
       );
-      toast.success(`${transactionType === 'earn' ? 'Added' : 'Deducted'} ${amount} bucks!`);
+      const label = { earn: 'Added', spend: 'Deducted', bonus: 'Bonus added', adjustment: 'Adjusted' }[transactionType] || 'Processed';
+      toast.success(`${label} ${amount} bucks!`);
       setScannedMember({ ...scannedMember, current_balance: response.data.new_balance });
       setAmount('');
+      setCategory('');
+      setNotes('');
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Transaction failed');
     } finally {
@@ -382,33 +389,58 @@ const ScannerPage = () => {
               </div>
 
               {/* Transaction Type Toggle */}
-              <div className="flex gap-3 mb-4">
-                <button
-                  onClick={() => setTransactionType('earn')}
-                  className={`flex-1 py-3 rounded-2xl font-bold transition-all ${
-                    transactionType === 'earn'
-                      ? 'bg-emerald-500 text-white'
-                      : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
-                  }`}
-                  data-testid="type-earn-btn"
-                >
-                  <Plus className="w-5 h-5 inline mr-1" /> Earn
-                </button>
-                <button
-                  onClick={() => setTransactionType('spend')}
-                  className={`flex-1 py-3 rounded-2xl font-bold transition-all ${
-                    transactionType === 'spend'
-                      ? 'bg-rose-500 text-white'
-                      : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
-                  }`}
-                  data-testid="type-spend-btn"
-                >
-                  <Minus className="w-5 h-5 inline mr-1" /> Spend
-                </button>
+              <div className="grid grid-cols-4 gap-2 mb-4">
+                {[
+                  { id: 'earn', label: 'Earn', icon: Plus, color: 'emerald' },
+                  { id: 'spend', label: 'Spend', icon: Minus, color: 'rose' },
+                  { id: 'bonus', label: 'Bonus', icon: Plus, color: 'amber' },
+                  { id: 'adjustment', label: 'Adjust', icon: Minus, color: 'sky' },
+                ].map(({ id, label, icon: Icon, color }) => (
+                  <button
+                    key={id}
+                    onClick={() => { setTransactionType(id); setCategory(''); }}
+                    className={`py-3 rounded-2xl font-bold text-sm transition-all ${
+                      transactionType === id
+                        ? `bg-${color}-500 text-white`
+                        : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+                    }`}
+                    style={transactionType === id ? {
+                      backgroundColor: { earn: '#10b981', spend: '#f43f5e', bonus: '#f59e0b', adjustment: '#0ea5e9' }[id]
+                    } : {}}
+                    data-testid={`type-${id}-btn`}
+                  >
+                    <Icon className="w-4 h-4 inline mr-1" /> {label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Category / Reason Selector */}
+              <div className="mb-4">
+                <label className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 block">Reason</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {(transactionType === 'earn' ? ['Job', 'Task', 'Attendance', 'Homework', 'Helping Out', 'Other'] :
+                    transactionType === 'spend' ? ['Store Purchase', 'Event', 'Food', 'Activity', 'Other'] :
+                    transactionType === 'bonus' ? ['Award', 'Achievement', 'Staff Pick', 'Birthday', 'Contest', 'Other'] :
+                    ['Correction', 'Penalty', 'Transfer', 'Admin Fix', 'Other']
+                  ).map((cat) => (
+                    <button
+                      key={cat}
+                      onClick={() => setCategory(cat)}
+                      className={`py-2 px-2 rounded-xl text-xs font-bold transition-all ${
+                        category === cat
+                          ? 'bg-white text-slate-900'
+                          : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+                      }`}
+                      data-testid={`cat-${cat.toLowerCase().replace(/\s/g, '-')}`}
+                    >
+                      {cat}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               {/* Amount Input */}
-              <div className="mb-4">
+              <div className="mb-3">
                 <input
                   type="number"
                   value={amount}
@@ -421,7 +453,7 @@ const ScannerPage = () => {
               </div>
 
               {/* Quick Amount Buttons */}
-              <div className="grid grid-cols-4 gap-2 mb-6">
+              <div className="grid grid-cols-4 gap-2 mb-4">
                 {[5, 10, 25, 50].map((val) => (
                   <button
                     key={val}
@@ -434,10 +466,22 @@ const ScannerPage = () => {
                 ))}
               </div>
 
+              {/* Notes */}
+              <div className="mb-5">
+                <input
+                  type="text"
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder="Leave a note (optional)"
+                  className="w-full bg-slate-800 border-2 border-slate-700 rounded-2xl px-4 py-3 text-sm text-white focus:outline-none focus:border-amber-500 placeholder-slate-500"
+                  data-testid="notes-input"
+                />
+              </div>
+
               {/* Action Buttons */}
               <div className="flex gap-3">
                 <button
-                  onClick={() => { setScannedMember(null); setAmount(''); }}
+                  onClick={() => { setScannedMember(null); setAmount(''); setCategory(''); setNotes(''); }}
                   className="btn-secondary flex-1"
                   data-testid="scan-another-btn"
                 >
@@ -446,17 +490,16 @@ const ScannerPage = () => {
                 <button
                   onClick={handleTransaction}
                   disabled={!amount || processing}
-                  className={`flex-1 rounded-full font-bold px-6 py-3 transition-all ${
-                    transactionType === 'earn'
-                      ? 'bg-emerald-500 text-white hover:bg-emerald-600'
-                      : 'bg-rose-500 text-white hover:bg-rose-600'
-                  } disabled:opacity-50`}
+                  className="flex-1 rounded-full font-bold px-6 py-3 transition-all disabled:opacity-50 text-white"
+                  style={{
+                    backgroundColor: { earn: '#10b981', spend: '#f43f5e', bonus: '#f59e0b', adjustment: '#0ea5e9' }[transactionType]
+                  }}
                   data-testid="confirm-txn-btn"
                 >
                   {processing ? (
                     <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mx-auto" />
                   ) : (
-                    `${transactionType === 'earn' ? 'Add' : 'Deduct'} Bucks`
+                    `${{ earn: 'Add', spend: 'Deduct', bonus: 'Bonus', adjustment: 'Adjust' }[transactionType]} Bucks`
                   )}
                 </button>
               </div>
