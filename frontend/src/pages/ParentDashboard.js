@@ -129,7 +129,7 @@ const ParentDashboard = () => {
       <header className="bg-white border-b border-slate-200 px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Coins className="w-6 h-6 text-amber-500" />
-          <span className="font-black text-slate-900" style={{ fontFamily: 'Nunito, sans-serif' }}>Club Bucks</span>
+          <span className="font-black text-slate-900" style={{ fontFamily: 'Libre Franklin, sans-serif' }}>ClubPay</span>
         </div>
         <div className="flex items-center gap-2">
           <span className="text-sm text-slate-500">{user?.name}</span>
@@ -142,7 +142,7 @@ const ParentDashboard = () => {
       <div className="p-4 md:p-6 max-w-4xl mx-auto">
         {/* Welcome */}
         <div className="mb-6">
-          <h1 className="text-2xl font-black text-slate-900" style={{ fontFamily: 'Nunito, sans-serif' }} data-testid="parent-dashboard-title">
+          <h1 className="text-2xl font-black text-slate-900" style={{ fontFamily: 'Libre Franklin, sans-serif' }} data-testid="parent-dashboard-title">
             Parent Dashboard
           </h1>
           <p className="text-slate-500">View your children's Club Bucks activity</p>
@@ -151,7 +151,7 @@ const ParentDashboard = () => {
         {/* Children List */}
         <div className="bg-white rounded-3xl shadow-sm border border-slate-100 p-6 mb-6">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-black text-slate-900" style={{ fontFamily: 'Nunito, sans-serif' }}>
+            <h2 className="text-xl font-black text-slate-900" style={{ fontFamily: 'Libre Franklin, sans-serif' }}>
               <Users className="w-5 h-5 text-sky-500 inline mr-2" />
               My Children
             </h2>
@@ -206,10 +206,10 @@ const ParentDashboard = () => {
                     </button>
                   </div>
                   <div className="mt-4 text-center">
-                    <p className="text-3xl font-black text-amber-500" style={{ fontFamily: 'Nunito, sans-serif' }}>
+                    <p className="text-3xl font-black text-amber-500" style={{ fontFamily: 'Libre Franklin, sans-serif' }}>
                       {child.current_balance?.toLocaleString() || 0}
                     </p>
-                    <p className="text-xs text-slate-500">Club Bucks</p>
+                    <p className="text-xs text-slate-500">ClubPay</p>
                   </div>
                 </div>
               ))}
@@ -220,7 +220,7 @@ const ParentDashboard = () => {
         {/* Selected Child Details */}
         {selectedChild && (
           <div className="bg-white rounded-3xl shadow-sm border border-slate-100 p-6">
-            <h3 className="text-xl font-black text-slate-900 mb-4" style={{ fontFamily: 'Nunito, sans-serif' }}>
+            <h3 className="text-xl font-black text-slate-900 mb-4" style={{ fontFamily: 'Libre Franklin, sans-serif' }}>
               <History className="w-5 h-5 text-sky-500 inline mr-2" />
               {selectedChild.display_name}'s Activity
             </h3>
@@ -269,7 +269,7 @@ const ParentDashboard = () => {
                       <p className="font-bold text-slate-900 truncate">{txn.category}</p>
                       <p className="text-xs text-slate-400">{formatDate(txn.created_at)}</p>
                     </div>
-                    <span className={`font-black ${txn.amount >= 0 ? 'text-emerald-500' : 'text-rose-500'}`} style={{ fontFamily: 'Nunito, sans-serif' }}>
+                    <span className={`font-black ${txn.amount >= 0 ? 'text-emerald-500' : 'text-rose-500'}`} style={{ fontFamily: 'Libre Franklin, sans-serif' }}>
                       {txn.amount >= 0 ? '+' : ''}{txn.amount}
                     </span>
                   </div>
@@ -298,7 +298,7 @@ const ParentDashboard = () => {
       {showLinkModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowLinkModal(false)}>
           <div className="bg-white rounded-3xl p-8 max-w-md w-full" onClick={(e) => e.stopPropagation()} data-testid="link-child-modal">
-            <h3 className="text-xl font-black text-slate-900 mb-2" style={{ fontFamily: 'Nunito, sans-serif' }}>
+            <h3 className="text-xl font-black text-slate-900 mb-2" style={{ fontFamily: 'Libre Franklin, sans-serif' }}>
               <Link2 className="w-5 h-5 text-sky-500 inline mr-2" />
               Link Your Child
             </h3>

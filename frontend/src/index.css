@@ -1,12 +1,20 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Nunito:wght@400;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Libre+Franklin:wght@400;500;600;700;800;900&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  --font-heading: 'Nunito', sans-serif;
-  --font-body: 'DM Sans', sans-serif;
+  --font-heading: 'Libre Franklin', 'Helvetica', sans-serif;
+  --font-body: 'DM Sans', 'Helvetica', sans-serif;
+  /* BGCA Brand Colors */
+  --brand-blue: #0080c6;
+  --brand-green: #84bd00;
+  --brand-navy: #004b87;
+  --brand-purple: #61279e;
+  --brand-pink: #ed40a9;
+  --brand-faded-blue: #bfdff1;
+  --brand-lightest-blue: #e1eef9;
 }
 
 body {
@@ -32,13 +40,13 @@ code {
     --card-foreground: 222 47% 11%;
     --popover: 0 0% 100%;
     --popover-foreground: 222 47% 11%;
-    --primary: 199 89% 48%;
+    --primary: 202 100% 39%;
     --primary-foreground: 0 0% 100%;
     --secondary: 210 40% 96%;
     --secondary-foreground: 222 47% 11%;
     --muted: 210 40% 96%;
     --muted-foreground: 215 16% 47%;
-    --accent: 38 92% 50%;
+    --accent: 82 100% 37%;
     --accent-foreground: 0 0% 100%;
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
@@ -46,7 +54,7 @@ code {
     --success-foreground: 0 0% 100%;
     --border: 214 32% 91%;
     --input: 214 32% 91%;
-    --ring: 199 89% 48%;
+    --ring: 202 100% 39%;
     --radius: 1rem;
   }
 }
@@ -67,11 +75,19 @@ code {
   }
   
   .btn-primary {
-    @apply bg-sky-500 text-white rounded-full font-bold px-6 py-3 hover:bg-sky-600 active:scale-95 transition-all shadow-sm hover:shadow-md;
+    @apply text-white rounded-full font-bold px-6 py-3 active:scale-95 transition-all shadow-sm hover:shadow-md;
+    background-color: var(--brand-blue);
+  }
+  .btn-primary:hover {
+    background-color: var(--brand-navy);
   }
   
   .btn-bucks {
-    @apply bg-amber-500 text-white rounded-full font-bold px-6 py-3 hover:bg-amber-600 active:scale-95 transition-all shadow-sm hover:shadow-md;
+    @apply text-white rounded-full font-bold px-6 py-3 active:scale-95 transition-all shadow-sm hover:shadow-md;
+    background-color: var(--brand-green);
+  }
+  .btn-bucks:hover {
+    filter: brightness(0.9);
   }
   
   .btn-secondary {
@@ -79,7 +95,10 @@ code {
   }
   
   .input-field {
-    @apply bg-slate-50 border-2 border-slate-200 rounded-2xl px-4 py-3 focus:outline-none focus:ring-0 focus:border-sky-500 transition-colors w-full;
+    @apply bg-slate-50 border-2 border-slate-200 rounded-2xl px-4 py-3 focus:outline-none focus:ring-0 transition-colors w-full;
+    &:focus {
+      border-color: var(--brand-blue);
+    }
   }
   
   .badge-earn {

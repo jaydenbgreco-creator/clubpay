@@ -17,6 +17,9 @@ const AdminLayout = ({ children, title, subtitle, actions }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [clubDropdownOpen, setClubDropdownOpen] = useState(false);
 
+  const primaryColor = settings?.primary_color || '#0080c6';
+  const accentColor = settings?.accent_color || '#84bd00';
+
   const handleLogout = async () => {
     await logout();
     navigate('/login');
@@ -42,16 +45,11 @@ const AdminLayout = ({ children, title, subtitle, actions }) => {
     <div className="min-h-screen bg-slate-50 flex">
       {/* Sidebar */}
       <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-slate-200 transform transition-transform duration-300 lg:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-        <div className="p-6">
+        <div className="p-5">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-2xl flex items-center justify-center" style={{ backgroundColor: settings?.accent_color || '#f59e0b' }}>
-              <Coins className="w-6 h-6 text-white" strokeWidth={2.5} />
-            </div>
-            <div>
-              <h1 className="text-xl font-black text-slate-900" style={{ fontFamily: 'Nunito, sans-serif' }}>{settings?.app_name || 'Club Bucks'}</h1>
-              <p className="text-xs text-slate-500 font-medium">{isAdmin ? 'Admin Panel' : 'Staff Panel'}</p>
-            </div>
+            <img src="/brand/logo-horizontal.png" alt="BGCA" className="h-10 w-auto" />
           </div>
+          <p className="text-xs font-semibold mt-1 ml-1" style={{ color: primaryColor, fontFamily: 'Libre Franklin, sans-serif' }}>{settings?.app_name || 'ClubPay'}</p>
         </div>
 
         {/* Club Selector */}
@@ -77,9 +75,10 @@ const AdminLayout = ({ children, title, subtitle, actions }) => {
                       onClick={() => { switchClub(club); setClubDropdownOpen(false); }}
                       className={`w-full text-left px-4 py-2.5 text-sm font-medium transition-colors ${
                         activeClub?.id === club.id
-                          ? 'bg-sky-50 text-sky-700'
+                          ? 'text-white'
                           : 'text-slate-600 hover:bg-slate-50'
                       }`}
+                      style={activeClub?.id === club.id ? { backgroundColor: primaryColor } : {}}
                       data-testid={`club-option-${club.id}`}
                     >
                       {club.name}
@@ -102,7 +101,7 @@ const AdminLayout = ({ children, title, subtitle, actions }) => {
                   ? 'text-white'
                   : 'text-slate-600 hover:bg-slate-50'
               }`}
-              style={location.pathname === item.path ? { backgroundColor: settings?.primary_color || '#0ea5e9' } : {}}
+              style={location.pathname === item.path ? { backgroundColor: primaryColor } : {}}
               data-testid={`nav-${item.label.toLowerCase().replace(/\s/g, '-')}`}
               onClick={() => setSidebarOpen(false)}
             >
@@ -138,8 +137,7 @@ const AdminLayout = ({ children, title, subtitle, actions }) => {
             <Menu className="w-6 h-6 text-slate-600" />
           </button>
           <div className="flex items-center gap-2">
-            <Coins className="w-6 h-6 text-amber-500" />
-            <span className="font-black text-slate-900" style={{ fontFamily: 'Nunito, sans-serif' }}>{settings?.app_name || 'Club Bucks'}</span>
+            <img src="/brand/logo-horizontal.png" alt="BGCA" className="h-7 w-auto" />
           </div>
           <div className="w-10" />
         </header>
@@ -149,7 +147,7 @@ const AdminLayout = ({ children, title, subtitle, actions }) => {
             <div className="flex items-center justify-between mb-8">
               <div>
                 {title && (
-                  <h2 className="text-3xl font-black text-slate-900" style={{ fontFamily: 'Nunito, sans-serif' }}>
+                  <h2 className="text-3xl font-black text-slate-900" style={{ fontFamily: 'Libre Franklin, sans-serif' }}>
                     {title}
                   </h2>
                 )}

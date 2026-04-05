@@ -97,7 +97,7 @@ const EditMemberPage = () => {
               <Coins className="w-6 h-6 text-white" strokeWidth={2.5} />
             </div>
             <div>
-              <h1 className="text-xl font-black text-slate-900" style={{ fontFamily: 'Nunito, sans-serif' }}>Club Bucks</h1>
+              <h1 className="text-xl font-black text-slate-900" style={{ fontFamily: 'Libre Franklin, sans-serif' }}>ClubPay</h1>
               <p className="text-xs text-slate-500 font-medium">Admin Panel</p>
             </div>
           </div>
@@ -145,7 +145,7 @@ const EditMemberPage = () => {
           <button onClick={() => setSidebarOpen(true)} className="p-2">
             <Menu className="w-6 h-6 text-slate-600" />
           </button>
-          <span className="font-black text-slate-900" style={{ fontFamily: 'Nunito, sans-serif' }}>Edit Member</span>
+          <span className="font-black text-slate-900" style={{ fontFamily: 'Libre Franklin, sans-serif' }}>Edit Member</span>
           <div className="w-10" />
         </header>
 
@@ -156,7 +156,7 @@ const EditMemberPage = () => {
           </button>
 
           <div className="max-w-2xl">
-            <h2 className="text-3xl font-black text-slate-900 mb-2" style={{ fontFamily: 'Nunito, sans-serif' }} data-testid="edit-member-title">
+            <h2 className="text-3xl font-black text-slate-900 mb-2" style={{ fontFamily: 'Libre Franklin, sans-serif' }} data-testid="edit-member-title">
               Edit Member
             </h2>
             <p className="text-slate-500 mb-8">Update details for {member?.display_name} ({memberId})</p>
@@ -165,7 +165,7 @@ const EditMemberPage = () => {
               {/* Current Balance Display */}
               <div className="bg-amber-50 rounded-2xl p-4 border border-amber-200">
                 <p className="text-amber-700 font-bold text-sm mb-1">Current Balance</p>
-                <p className="text-3xl font-black text-amber-600" style={{ fontFamily: 'Nunito, sans-serif' }}>
+                <p className="text-3xl font-black text-amber-600" style={{ fontFamily: 'Libre Franklin, sans-serif' }}>
                   {member?.current_balance?.toLocaleString() || 0} <span className="text-lg">bucks</span>
                 </p>
                 <p className="text-xs text-amber-600 mt-2">

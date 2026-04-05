@@ -183,16 +183,11 @@ const ScannerPage = () => {
     <div className="min-h-screen bg-slate-900 flex">
       {/* Sidebar - Hidden on mobile for scan station */}
       <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-slate-200 transform transition-transform duration-300 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-        <div className="p-6">
+        <div className="p-5">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-amber-500 rounded-2xl flex items-center justify-center">
-              <Coins className="w-6 h-6 text-white" strokeWidth={2.5} />
-            </div>
-            <div>
-              <h1 className="text-xl font-black text-slate-900" style={{ fontFamily: 'Nunito, sans-serif' }}>Club Bucks</h1>
-              <p className="text-xs text-slate-500 font-medium">Scan Station</p>
-            </div>
+            <img src="/brand/logo-horizontal.png" alt="BGCA" className="h-10 w-auto" />
           </div>
+          <p className="text-xs font-semibold mt-1 ml-1" style={{ color: '#0080c6', fontFamily: 'Libre Franklin, sans-serif' }}>ClubPay</p>
         </div>
 
         <nav className="px-4 space-y-1">
@@ -232,7 +227,7 @@ const ScannerPage = () => {
           </button>
           <div className="flex items-center gap-2 text-white">
             <Scan className="w-6 h-6 text-amber-400" />
-            <span className="font-black" style={{ fontFamily: 'Nunito, sans-serif' }}>Scan Station</span>
+            <span className="font-black" style={{ fontFamily: 'Libre Franklin, sans-serif' }}>Scan Station</span>
           </div>
           <Link to="/dashboard" className="text-sky-400 text-sm font-bold">Dashboard</Link>
         </header>
@@ -244,7 +239,7 @@ const ScannerPage = () => {
               <div className="w-32 h-32 bg-slate-800 rounded-3xl flex items-center justify-center mx-auto mb-8">
                 <Scan className="w-16 h-16 text-amber-400" strokeWidth={1.5} />
               </div>
-              <h2 className="text-3xl font-black text-white mb-4" style={{ fontFamily: 'Nunito, sans-serif' }}>
+              <h2 className="text-3xl font-black text-white mb-4" style={{ fontFamily: 'Libre Franklin, sans-serif' }}>
                 Ready to Scan
               </h2>
               <p className="text-slate-400 mb-8">Scan a QR code or enter Member ID manually</p>
@@ -273,7 +268,7 @@ const ScannerPage = () => {
           {showManualEntry && !scannedMember && (
             <div className="w-full max-w-md animate-fade-in-up" data-testid="manual-entry-active">
               <div className="bg-slate-800 rounded-3xl p-6 mb-6">
-                <h3 className="text-xl font-black text-white mb-4 text-center" style={{ fontFamily: 'Nunito, sans-serif' }}>
+                <h3 className="text-xl font-black text-white mb-4 text-center" style={{ fontFamily: 'Libre Franklin, sans-serif' }}>
                   <Search className="w-6 h-6 text-amber-400 inline mr-2" />
                   Find Member
                 </h3>
@@ -316,7 +311,7 @@ const ScannerPage = () => {
                             <p className="text-sm text-slate-400">{member.member_id}</p>
                           </div>
                           <div className="text-right flex-shrink-0">
-                            <p className="font-black text-amber-400" style={{ fontFamily: 'Nunito, sans-serif' }}>
+                            <p className="font-black text-amber-400" style={{ fontFamily: 'Libre Franklin, sans-serif' }}>
                               {member.current_balance}
                             </p>
                             <p className="text-xs text-slate-400">bucks</p>
@@ -376,11 +371,11 @@ const ScannerPage = () => {
                     {scannedMember.first_name?.[0]?.toUpperCase()}
                   </span>
                 </div>
-                <h3 className="text-2xl font-black text-white mb-1" style={{ fontFamily: 'Nunito, sans-serif' }}>
+                <h3 className="text-2xl font-black text-white mb-1" style={{ fontFamily: 'Libre Franklin, sans-serif' }}>
                   {scannedMember.display_name}
                 </h3>
                 <p className="text-slate-400 mb-4">{scannedMember.member_id}</p>
-                <div className="text-5xl font-black text-amber-400 balance-update" style={{ fontFamily: 'Nunito, sans-serif' }} data-testid="member-balance">
+                <div className="text-5xl font-black balance-update" style={{ color: '#84bd00', fontFamily: 'Libre Franklin, sans-serif' }} data-testid="member-balance">
                   {scannedMember.current_balance?.toLocaleString()}
                 </div>
                 <p className="text-slate-400 mt-1">Current Balance</p>
@@ -420,7 +415,7 @@ const ScannerPage = () => {
                   onChange={(e) => setAmount(e.target.value)}
                   placeholder="Enter amount"
                   className="w-full bg-slate-800 border-2 border-slate-700 rounded-2xl px-6 py-4 text-3xl font-black text-white text-center focus:outline-none focus:border-amber-500"
-                  style={{ fontFamily: 'Nunito, sans-serif' }}
+                  style={{ fontFamily: 'Libre Franklin, sans-serif' }}
                   data-testid="amount-input"
                 />
               </div>

@@ -7,9 +7,9 @@ const API_URL = process.env.REACT_APP_BACKEND_URL;
 
 export const SettingsProvider = ({ children }) => {
   const [settings, setSettings] = useState({
-    app_name: 'Club Bucks',
-    primary_color: '#0ea5e9',
-    accent_color: '#f59e0b',
+    app_name: 'ClubPay',
+    primary_color: '#0080c6',
+    accent_color: '#84bd00',
     theme: 'light'
   });
   const [loading, setLoading] = useState(true);

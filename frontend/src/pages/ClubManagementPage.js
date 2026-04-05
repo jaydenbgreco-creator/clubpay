@@ -94,7 +94,7 @@ const ClubManagementPage = () => {
               <Coins className="w-6 h-6 text-white" strokeWidth={2.5} />
             </div>
             <div>
-              <h1 className="text-xl font-black text-slate-900" style={{ fontFamily: 'Nunito, sans-serif' }}>{settings?.app_name || 'Club Bucks'}</h1>
+              <h1 className="text-xl font-black text-slate-900" style={{ fontFamily: 'Libre Franklin, sans-serif' }}>{settings?.app_name || 'ClubPay'}</h1>
               <p className="text-xs text-slate-500 font-medium">Admin Panel</p>
             </div>
           </div>
@@ -145,14 +145,14 @@ const ClubManagementPage = () => {
           <button onClick={() => setSidebarOpen(true)} className="p-2" data-testid="mobile-menu-btn">
             <Menu className="w-6 h-6 text-slate-600" />
           </button>
-          <span className="font-black text-slate-900" style={{ fontFamily: 'Nunito, sans-serif' }}>Clubs</span>
+          <span className="font-black text-slate-900" style={{ fontFamily: 'Libre Franklin, sans-serif' }}>Clubs</span>
           <div className="w-10" />
         </header>
 
         <div className="p-6 md:p-8">
           <div className="flex items-center justify-between mb-8">
             <div>
-              <h2 className="text-3xl font-black text-slate-900" style={{ fontFamily: 'Nunito, sans-serif' }} data-testid="clubs-title">
+              <h2 className="text-3xl font-black text-slate-900" style={{ fontFamily: 'Libre Franklin, sans-serif' }} data-testid="clubs-title">
                 Clubs
               </h2>
               <p className="text-slate-500 mt-1">{clubs.length} club{clubs.length !== 1 ? 's' : ''} total</p>
@@ -198,7 +198,7 @@ const ClubManagementPage = () => {
                     </button>
                   </div>
                 </div>
-                <h3 className="text-xl font-black text-slate-900 mb-1" style={{ fontFamily: 'Nunito, sans-serif' }}>
+                <h3 className="text-xl font-black text-slate-900 mb-1" style={{ fontFamily: 'Libre Franklin, sans-serif' }}>
                   {club.name}
                 </h3>
                 {club.description && (
@@ -224,7 +224,7 @@ const ClubManagementPage = () => {
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl shadow-xl max-w-md w-full p-6">
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-black text-slate-900" style={{ fontFamily: 'Nunito, sans-serif' }}>
+              <h3 className="text-xl font-black text-slate-900" style={{ fontFamily: 'Libre Franklin, sans-serif' }}>
                 {editingClub ? 'Edit Club' : 'Add New Club'}
               </h3>
               <button onClick={() => { setShowAddModal(false); setEditingClub(null); }} className="p-2 text-slate-400 hover:text-slate-600">

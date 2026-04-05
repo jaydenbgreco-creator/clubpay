@@ -69,7 +69,7 @@ const RegisterPage = () => {
           <div className="inline-flex items-center justify-center w-20 h-20 bg-amber-500 rounded-3xl mb-4 shadow-lg">
             <Coins className="w-10 h-10 text-white" strokeWidth={2.5} />
           </div>
-          <h1 className="text-4xl font-black text-slate-900 tracking-tight" style={{ fontFamily: 'Nunito, sans-serif' }}>
+          <h1 className="text-4xl font-black text-slate-900 tracking-tight" style={{ fontFamily: 'Libre Franklin, sans-serif' }}>
             Club Bucks
           </h1>
           <p className="text-slate-500 mt-2">Create your account</p>

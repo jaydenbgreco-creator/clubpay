@@ -24,6 +24,9 @@ const AdminDashboard = () => {
   const [recentTransactions, setRecentTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  const primaryColor = settings?.primary_color || '#0080c6';
+  const accentColor = settings?.accent_color || '#84bd00';
+
   useEffect(() => {
     if (activeClub) {
       loadDashboardData();
@@ -85,7 +88,7 @@ const AdminDashboard = () => {
       </div>
       <div className="mt-4">
         <p className="text-slate-500 text-sm font-medium">{label}</p>
-        <p className="text-3xl font-black text-slate-900 mt-1" style={{ fontFamily: 'Nunito, sans-serif' }}>
+        <p className="text-3xl font-black text-slate-900 mt-1" style={{ fontFamily: 'Libre Franklin, sans-serif' }}>
           {value}
         </p>
         {subValue && <p className="text-slate-400 text-sm mt-1">{subValue}</p>}
@@ -122,16 +125,11 @@ const AdminDashboard = () => {
     <div className="min-h-screen bg-slate-50 flex">
       {/* Sidebar */}
       <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-slate-200 transform transition-transform duration-300 lg:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-        <div className="p-6">
+        <div className="p-5">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-2xl flex items-center justify-center" style={{ backgroundColor: settings?.accent_color || '#f59e0b' }}>
-              <Coins className="w-6 h-6 text-white" strokeWidth={2.5} />
-            </div>
-            <div>
-              <h1 className="text-xl font-black text-slate-900" style={{ fontFamily: 'Nunito, sans-serif' }}>{settings?.app_name || 'Club Bucks'}</h1>
-              <p className="text-xs text-slate-500 font-medium">{isAdmin ? 'Admin Panel' : 'Staff Panel'}</p>
-            </div>
+            <img src="/brand/logo-horizontal.png" alt="BGCA" className="h-10 w-auto" />
           </div>
+          <p className="text-xs font-semibold mt-1 ml-1" style={{ color: primaryColor, fontFamily: 'Libre Franklin, sans-serif' }}>{settings?.app_name || 'ClubPay'}</p>
         </div>
 
         {/* Club Selector */}
@@ -182,7 +180,7 @@ const AdminDashboard = () => {
                   ? 'text-white'
                   : 'text-slate-600 hover:bg-slate-50'
               }`}
-              style={location.pathname === item.path ? { backgroundColor: settings?.primary_color || '#0ea5e9' } : {}}
+              style={location.pathname === item.path ? { backgroundColor: primaryColor } : {}}
               data-testid={`nav-${item.label.toLowerCase().replace(/\s/g, '-')}`}
               onClick={() => setSidebarOpen(false)}
             >
@@ -222,7 +220,7 @@ const AdminDashboard = () => {
           </button>
           <div className="flex items-center gap-2">
             <Coins className="w-6 h-6 text-amber-500" />
-            <span className="font-black text-slate-900" style={{ fontFamily: 'Nunito, sans-serif' }}>Club Bucks</span>
+            <span className="font-black text-slate-900" style={{ fontFamily: 'Libre Franklin, sans-serif' }}>ClubPay</span>
           </div>
           <div className="w-10" />
         </header>
@@ -230,10 +228,10 @@ const AdminDashboard = () => {
         <div className="p-6 md:p-8">
           {/* Welcome section */}
           <div className="mb-8">
-            <h2 className="text-3xl font-black text-slate-900" style={{ fontFamily: 'Nunito, sans-serif' }} data-testid="dashboard-title">
+            <h2 className="text-3xl font-black text-slate-900" style={{ fontFamily: 'Libre Franklin, sans-serif' }} data-testid="dashboard-title">
               Welcome back, {user?.name?.split(' ')[0] || 'Admin'}!
             </h2>
-            <p className="text-slate-500 mt-1">Here's what's happening with Club Bucks today.</p>
+            <p className="text-slate-500 mt-1">Here's what's happening with ClubPay today.</p>
           </div>
 
           {/* Quick actions */}
@@ -261,7 +259,7 @@ const AdminDashboard = () => {
             {/* Leaderboard */}
             <div className="bg-white rounded-3xl shadow-sm border border-slate-100 p-6" data-testid="leaderboard-card">
               <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xl font-black text-slate-900" style={{ fontFamily: 'Nunito, sans-serif' }}>
+                <h3 className="text-xl font-black text-slate-900" style={{ fontFamily: 'Libre Franklin, sans-serif' }}>
                   <Trophy className="w-5 h-5 text-amber-500 inline mr-2" />
                   Top Earners
                 </h3>
@@ -280,7 +278,7 @@ const AdminDashboard = () => {
                       <p className="text-xs text-slate-500">{member.member_id}</p>
                     </div>
                     <div className="text-right">
-                      <p className="font-black text-amber-500" style={{ fontFamily: 'Nunito, sans-serif' }}>
+                      <p className="font-black" style={{ color: '#84bd00', fontFamily: 'Libre Franklin, sans-serif' }}>
                         {member.current_balance?.toLocaleString()}
                       </p>
                       <p className="text-xs text-slate-500">bucks</p>
@@ -296,7 +294,7 @@ const AdminDashboard = () => {
             {/* Recent Transactions */}
             <div className="bg-white rounded-3xl shadow-sm border border-slate-100 p-6" data-testid="recent-transactions-card">
               <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xl font-black text-slate-900" style={{ fontFamily: 'Nunito, sans-serif' }}>
+                <h3 className="text-xl font-black text-slate-900" style={{ fontFamily: 'Libre Franklin, sans-serif' }}>
                   <History className="w-5 h-5 text-sky-500 inline mr-2" />
                   Recent Activity
                 </h3>
@@ -322,7 +320,7 @@ const AdminDashboard = () => {
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className={`font-black ${txn.amount >= 0 ? 'text-emerald-500' : 'text-rose-500'}`} style={{ fontFamily: 'Nunito, sans-serif' }}>
+                      <p className={`font-black ${txn.amount >= 0 ? 'text-emerald-500' : 'text-rose-500'}`} style={{ fontFamily: 'Libre Franklin, sans-serif' }}>
                         {txn.amount >= 0 ? '+' : ''}{txn.amount}
                       </p>
                     </div>

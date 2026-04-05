@@ -27,7 +27,7 @@ const LeaderboardPage = () => {
   return (
     <AdminLayout>
       <div className="mb-8">
-        <h2 className="text-3xl font-black text-slate-900" style={{ fontFamily: 'Nunito, sans-serif' }} data-testid="leaderboard-title">
+        <h2 className="text-3xl font-black text-slate-900" style={{ color: "#84bd00", fontFamily: "Libre Franklin, sans-serif" }} data-testid="leaderboard-title">
           <Trophy className="w-8 h-8 text-amber-500 inline mr-2" />
           Leaderboard
         </h2>
@@ -51,7 +51,7 @@ const LeaderboardPage = () => {
                   </div>
                   <Medal className="w-8 h-8 text-slate-400 mx-auto mb-2" strokeWidth={2} />
                   <p className="font-bold text-slate-900 truncate">{leaderboard[1]?.display_name}</p>
-                  <p className="text-3xl font-black text-amber-500 mt-2" style={{ fontFamily: 'Nunito, sans-serif' }}>
+                  <p className="text-3xl font-black mt-2" style={{ color: "#84bd00", fontFamily: "Libre Franklin, sans-serif" }}>
                     {leaderboard[1]?.current_balance?.toLocaleString()}
                   </p>
                   <p className="text-xs text-slate-500">bucks</p>
@@ -65,7 +65,7 @@ const LeaderboardPage = () => {
                     <Crown className="w-10 h-10 text-white" strokeWidth={2} />
                   </div>
                   <p className="font-black text-slate-900 text-lg truncate">{leaderboard[0]?.display_name}</p>
-                  <p className="text-4xl font-black text-amber-500 mt-2" style={{ fontFamily: 'Nunito, sans-serif' }}>
+                  <p className="text-4xl font-black mt-2" style={{ color: "#84bd00", fontFamily: "Libre Franklin, sans-serif" }}>
                     {leaderboard[0]?.current_balance?.toLocaleString()}
                   </p>
                   <p className="text-xs text-slate-500">bucks</p>
@@ -80,7 +80,7 @@ const LeaderboardPage = () => {
                   </div>
                   <Award className="w-6 h-6 text-orange-400 mx-auto mb-2" strokeWidth={2} />
                   <p className="font-bold text-slate-900 truncate text-sm">{leaderboard[2]?.display_name}</p>
-                  <p className="text-2xl font-black text-amber-500 mt-2" style={{ fontFamily: 'Nunito, sans-serif' }}>
+                  <p className="text-2xl font-black mt-2" style={{ color: "#84bd00", fontFamily: "Libre Franklin, sans-serif" }}>
                     {leaderboard[2]?.current_balance?.toLocaleString()}
                   </p>
                   <p className="text-xs text-slate-500">bucks</p>
@@ -108,7 +108,7 @@ const LeaderboardPage = () => {
                   <p className="text-xs text-slate-500">{member.member_id}</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-xl font-black text-amber-500" style={{ fontFamily: 'Nunito, sans-serif' }}>
+                  <p className="text-xl font-black " style={{ color: "#84bd00", fontFamily: "Libre Franklin, sans-serif" }}>
                     {member.current_balance?.toLocaleString()}
                   </p>
                   <p className="text-xs text-slate-500">bucks</p>

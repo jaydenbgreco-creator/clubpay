@@ -74,7 +74,7 @@ const StudentDashboard = () => {
       <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
         <div className="bg-white rounded-3xl shadow-sm border border-slate-100 p-8 max-w-md text-center">
           <Coins className="w-16 h-16 text-amber-500 mx-auto mb-4" />
-          <h2 className="text-2xl font-black text-slate-900 mb-2" style={{ fontFamily: 'Nunito, sans-serif' }}>
+          <h2 className="text-2xl font-black text-slate-900 mb-2" style={{ fontFamily: 'Libre Franklin, sans-serif' }}>
             Account Not Linked
           </h2>
           <p className="text-slate-500 mb-6">
@@ -95,7 +95,7 @@ const StudentDashboard = () => {
       <header className="bg-white border-b border-slate-200 px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Coins className="w-6 h-6 text-amber-500" />
-          <span className="font-black text-slate-900" style={{ fontFamily: 'Nunito, sans-serif' }}>Club Bucks</span>
+          <span className="font-black text-slate-900" style={{ fontFamily: 'Libre Franklin, sans-serif' }}>ClubPay</span>
         </div>
         <button onClick={handleLogout} className="p-2 text-slate-400 hover:text-rose-500 transition-colors" data-testid="logout-btn">
           <LogOut className="w-5 h-5" />
@@ -106,10 +106,10 @@ const StudentDashboard = () => {
         {/* Balance Card */}
         <div className="bg-gradient-to-br from-amber-400 to-amber-500 rounded-3xl p-8 text-white text-center mb-6 shadow-lg" data-testid="balance-card">
           <p className="text-amber-100 mb-2">Your Balance</p>
-          <p className="text-6xl font-black mb-2 balance-update" style={{ fontFamily: 'Nunito, sans-serif' }} data-testid="student-balance">
+          <p className="text-6xl font-black mb-2 balance-update" style={{ fontFamily: 'Libre Franklin, sans-serif' }} data-testid="student-balance">
             {member?.current_balance?.toLocaleString() || 0}
           </p>
-          <p className="text-amber-100">Club Bucks</p>
+          <p className="text-amber-100">ClubPay</p>
           
           <div className="grid grid-cols-3 gap-4 mt-8 text-center">
             <div>
@@ -134,14 +134,14 @@ const StudentDashboard = () => {
           data-testid="show-qr-btn"
         >
           <QrCode className="w-8 h-8 text-sky-500" strokeWidth={2.5} />
-          <span className="font-black text-slate-900 text-lg" style={{ fontFamily: 'Nunito, sans-serif' }}>
+          <span className="font-black text-slate-900 text-lg" style={{ fontFamily: 'Libre Franklin, sans-serif' }}>
             Show My QR Code
           </span>
         </button>
 
         {/* Recent Transactions */}
         <div className="bg-white rounded-3xl shadow-sm border border-slate-100 p-6" data-testid="recent-transactions">
-          <h3 className="text-xl font-black text-slate-900 mb-4" style={{ fontFamily: 'Nunito, sans-serif' }}>
+          <h3 className="text-xl font-black text-slate-900 mb-4" style={{ fontFamily: 'Libre Franklin, sans-serif' }}>
             <History className="w-5 h-5 text-sky-500 inline mr-2" />
             Recent Activity
           </h3>
@@ -161,7 +161,7 @@ const StudentDashboard = () => {
                   <p className="font-bold text-slate-900 truncate">{txn.category}</p>
                   <p className="text-xs text-slate-400">{formatDate(txn.created_at)}</p>
                 </div>
-                <span className={`font-black ${txn.amount >= 0 ? 'text-emerald-500' : 'text-rose-500'}`} style={{ fontFamily: 'Nunito, sans-serif' }}>
+                <span className={`font-black ${txn.amount >= 0 ? 'text-emerald-500' : 'text-rose-500'}`} style={{ fontFamily: 'Libre Franklin, sans-serif' }}>
                   {txn.amount >= 0 ? '+' : ''}{txn.amount}
                 </span>
               </div>
@@ -191,7 +191,7 @@ const StudentDashboard = () => {
       {showQR && qrCode && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowQR(false)}>
           <div className="bg-white rounded-3xl p-8 max-w-sm w-full text-center animate-fade-in-up" onClick={(e) => e.stopPropagation()} data-testid="qr-modal">
-            <h3 className="text-xl font-black text-slate-900 mb-2" style={{ fontFamily: 'Nunito, sans-serif' }}>
+            <h3 className="text-xl font-black text-slate-900 mb-2" style={{ fontFamily: 'Libre Franklin, sans-serif' }}>
               Your QR Code
             </h3>
             <p className="text-slate-500 mb-6">Show this to staff to earn or spend bucks</p>

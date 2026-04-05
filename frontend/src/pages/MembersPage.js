@@ -120,7 +120,7 @@ const MembersPage = () => {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
         <div>
-          <h2 className="text-3xl font-black text-slate-900" style={{ fontFamily: 'Nunito, sans-serif' }} data-testid="members-title">
+          <h2 className="text-3xl font-black text-slate-900" style={{ fontFamily: 'Libre Franklin, sans-serif' }} data-testid="members-title">
             Members
           </h2>
           <p className="text-slate-500">{members.length} total members{activeClub ? ` in ${activeClub.name}` : ''}</p>
@@ -220,7 +220,7 @@ const MembersPage = () => {
                       </span>
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <span className="font-black text-amber-500" style={{ fontFamily: 'Nunito, sans-serif' }}>
+                      <span className="font-black" style={{ color: '#84bd00', fontFamily: 'Libre Franklin, sans-serif' }}>
                         {member.current_balance?.toLocaleString()}
                       </span>
                     </td>
@@ -272,7 +272,7 @@ const MembersPage = () => {
       {showQRModal && qrData && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowQRModal(false)}>
           <div className="bg-white rounded-3xl p-8 max-w-sm w-full text-center" onClick={(e) => e.stopPropagation()} data-testid="qr-modal">
-            <h3 className="text-xl font-black text-slate-900 mb-2" style={{ fontFamily: 'Nunito, sans-serif' }}>
+            <h3 className="text-xl font-black text-slate-900 mb-2" style={{ fontFamily: 'Libre Franklin, sans-serif' }}>
               {qrData.member_name}
             </h3>
             <p className="text-slate-500 mb-6">{qrData.member_id}</p>
@@ -287,7 +287,7 @@ const MembersPage = () => {
       {showTransactionModal && selectedMember && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowTransactionModal(false)}>
           <div className="bg-white rounded-3xl p-8 max-w-md w-full" onClick={(e) => e.stopPropagation()} data-testid="transaction-modal">
-            <h3 className="text-xl font-black text-slate-900 mb-2" style={{ fontFamily: 'Nunito, sans-serif' }}>
+            <h3 className="text-xl font-black text-slate-900 mb-2" style={{ fontFamily: 'Libre Franklin, sans-serif' }}>
               Add Transaction
             </h3>
             <p className="text-slate-500 mb-6">For {selectedMember.display_name}</p>

@@ -213,9 +213,9 @@ class StaffUpdate(BaseModel):
     password: Optional[str] = None
 
 class AppSettings(BaseModel):
-    app_name: str = "Club Bucks"
-    primary_color: str = "#0ea5e9"
-    accent_color: str = "#f59e0b"
+    app_name: str = "ClubPay"
+    primary_color: str = "#0080c6"
+    accent_color: str = "#84bd00"
     theme: str = "light"
 
 class ClubCreate(BaseModel):
@@ -607,9 +607,9 @@ async def get_settings(request: Request):
     if not settings:
         # Return defaults
         return {
-            "app_name": "Club Bucks",
-            "primary_color": "#0ea5e9",
-            "accent_color": "#f59e0b",
+            "app_name": "ClubPay",
+            "primary_color": "#0080c6",
+            "accent_color": "#84bd00",
             "theme": "light"
         }
     return settings
@@ -620,9 +620,9 @@ async def get_public_settings():
     settings = await db.app_settings.find_one({"_id": "app_settings"}, {"_id": 0})
     if not settings:
         return {
-            "app_name": "Club Bucks",
-            "primary_color": "#0ea5e9",
-            "accent_color": "#f59e0b",
+            "app_name": "ClubPay",
+            "primary_color": "#0080c6",
+            "accent_color": "#84bd00",
             "theme": "light"
         }
     return settings

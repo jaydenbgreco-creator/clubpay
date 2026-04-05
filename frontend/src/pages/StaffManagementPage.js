@@ -143,7 +143,7 @@ const StaffManagementPage = () => {
               <Coins className="w-6 h-6 text-white" strokeWidth={2.5} />
             </div>
             <div>
-              <h1 className="text-xl font-black text-slate-900" style={{ fontFamily: 'Nunito, sans-serif' }}>Club Bucks</h1>
+              <h1 className="text-xl font-black text-slate-900" style={{ fontFamily: 'Libre Franklin, sans-serif' }}>ClubPay</h1>
               <p className="text-xs text-slate-500 font-medium">Admin Panel</p>
             </div>
           </div>
@@ -191,14 +191,14 @@ const StaffManagementPage = () => {
           <button onClick={() => setSidebarOpen(true)} className="p-2">
             <Menu className="w-6 h-6 text-slate-600" />
           </button>
-          <span className="font-black text-slate-900" style={{ fontFamily: 'Nunito, sans-serif' }}>Staff Management</span>
+          <span className="font-black text-slate-900" style={{ fontFamily: 'Libre Franklin, sans-serif' }}>Staff Management</span>
           <div className="w-10" />
         </header>
 
         <div className="p-6 md:p-8">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
             <div>
-              <h2 className="text-3xl font-black text-slate-900" style={{ fontFamily: 'Nunito, sans-serif' }} data-testid="staff-title">
+              <h2 className="text-3xl font-black text-slate-900" style={{ fontFamily: 'Libre Franklin, sans-serif' }} data-testid="staff-title">
                 <Shield className="w-8 h-8 text-sky-500 inline mr-2" />
                 Staff Management
               </h2>
@@ -277,7 +277,7 @@ const StaffManagementPage = () => {
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowAddModal(false)}>
           <div className="bg-white rounded-3xl p-8 max-w-md w-full" onClick={(e) => e.stopPropagation()} data-testid="add-staff-modal">
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-black text-slate-900" style={{ fontFamily: 'Nunito, sans-serif' }}>
+              <h3 className="text-xl font-black text-slate-900" style={{ fontFamily: 'Libre Franklin, sans-serif' }}>
                 <UserPlus className="w-5 h-5 text-sky-500 inline mr-2" />
                 Add Staff Member
               </h3>
@@ -339,7 +339,7 @@ const StaffManagementPage = () => {
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowEditModal(false)}>
           <div className="bg-white rounded-3xl p-8 max-w-md w-full" onClick={(e) => e.stopPropagation()} data-testid="edit-staff-modal">
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-black text-slate-900" style={{ fontFamily: 'Nunito, sans-serif' }}>
+              <h3 className="text-xl font-black text-slate-900" style={{ fontFamily: 'Libre Franklin, sans-serif' }}>
                 <Edit2 className="w-5 h-5 text-sky-500 inline mr-2" />
                 Edit Staff Member
               </h3>

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Coins, LogIn, AlertCircle } from 'lucide-react';
+import { LogIn, AlertCircle } from 'lucide-react';
 
 const formatApiErrorDetail = (detail) => {
   if (detail == null) return "Something went wrong. Please try again.";
@@ -27,7 +27,6 @@ const LoginPage = () => {
 
     try {
       const user = await login(email, password);
-      // Redirect based on role
       if (user.role === 'admin' || user.role === 'staff') {
         navigate('/dashboard');
       } else if (user.role === 'parent') {
@@ -43,21 +42,19 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+    <div className="min-h-screen flex items-center justify-center p-4" style={{ background: 'linear-gradient(135deg, #e1eef9 0%, #bfdff1 50%, #e1eef9 100%)' }}>
       <div className="w-full max-w-md animate-fade-in-up">
-        {/* Logo */}
+        {/* Brand Logo */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-20 h-20 bg-amber-500 rounded-3xl mb-4 shadow-lg">
-            <Coins className="w-10 h-10 text-white" strokeWidth={2.5} />
-          </div>
-          <h1 className="text-4xl font-black text-slate-900 tracking-tight" style={{ fontFamily: 'Nunito, sans-serif' }}>
-            Club Bucks
+          <img src="/brand/logo-horizontal.png" alt="Boys & Girls Clubs" className="h-16 mx-auto mb-4" />
+          <h1 className="text-3xl font-black tracking-tight" style={{ fontFamily: 'Libre Franklin, sans-serif', color: '#004b87' }}>
+            ClubPay
           </h1>
-          <p className="text-slate-500 mt-2">Sign in to manage your rewards</p>
+          <p className="text-sm font-semibold mt-1" style={{ color: '#0080c6' }}>Digital Bucks</p>
         </div>
 
         {/* Login Card */}
-        <div className="bg-white rounded-3xl shadow-sm border border-slate-100 p-8">
+        <div className="bg-white rounded-3xl shadow-lg border border-slate-100 p-8">
           {/* Google Sign In */}
           <button
             onClick={loginWithGoogle}
@@ -136,7 +133,7 @@ const LoginPage = () => {
 
         <p className="text-center text-slate-500 mt-6 text-sm">
           Need an account?{' '}
-          <Link to="/register" className="text-sky-500 font-bold hover:text-sky-600" data-testid="register-link">
+          <Link to="/register" className="font-bold hover:underline" style={{ color: '#0080c6' }} data-testid="register-link">
             Register here
           </Link>
         </p>

@@ -65,7 +65,7 @@ const AddMemberPage = () => {
               <Coins className="w-6 h-6 text-white" strokeWidth={2.5} />
             </div>
             <div>
-              <h1 className="text-xl font-black text-slate-900" style={{ fontFamily: 'Nunito, sans-serif' }}>Club Bucks</h1>
+              <h1 className="text-xl font-black text-slate-900" style={{ fontFamily: 'Libre Franklin, sans-serif' }}>ClubPay</h1>
               <p className="text-xs text-slate-500 font-medium">Admin Panel</p>
             </div>
           </div>
@@ -113,7 +113,7 @@ const AddMemberPage = () => {
           <button onClick={() => setSidebarOpen(true)} className="p-2">
             <Menu className="w-6 h-6 text-slate-600" />
           </button>
-          <span className="font-black text-slate-900" style={{ fontFamily: 'Nunito, sans-serif' }}>Add Member</span>
+          <span className="font-black text-slate-900" style={{ fontFamily: 'Libre Franklin, sans-serif' }}>Add Member</span>
           <div className="w-10" />
         </header>
 
@@ -124,7 +124,7 @@ const AddMemberPage = () => {
           </button>
 
           <div className="max-w-2xl">
-            <h2 className="text-3xl font-black text-slate-900 mb-2" style={{ fontFamily: 'Nunito, sans-serif' }} data-testid="add-member-title">
+            <h2 className="text-3xl font-black text-slate-900 mb-2" style={{ fontFamily: 'Libre Franklin, sans-serif' }} data-testid="add-member-title">
               Add New Member
             </h2>
             <p className="text-slate-500 mb-8">Enter the details for the new club member.</p>

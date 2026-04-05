@@ -57,7 +57,7 @@ const TransactionsPage = () => {
     <AdminLayout>
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
         <div>
-          <h2 className="text-3xl font-black text-slate-900" style={{ fontFamily: 'Nunito, sans-serif' }} data-testid="transactions-title">
+          <h2 className="text-3xl font-black text-slate-900" style={{ fontFamily: 'Libre Franklin, sans-serif' }} data-testid="transactions-title">
             Transactions
           </h2>
           <p className="text-slate-500">{transactions.length} total transactions{activeClub ? ` in ${activeClub.name}` : ''}</p>
@@ -128,7 +128,7 @@ const TransactionsPage = () => {
                   </div>
                 </div>
                 <div className="text-right flex-shrink-0">
-                  <p className={`text-xl font-black ${txn.amount >= 0 ? 'text-emerald-500' : 'text-rose-500'}`} style={{ fontFamily: 'Nunito, sans-serif' }}>
+                  <p className={`text-xl font-black ${txn.amount >= 0 ? 'text-emerald-500' : 'text-rose-500'}`} style={{ fontFamily: 'Libre Franklin, sans-serif' }}>
                     {txn.amount >= 0 ? '+' : ''}{txn.amount}
                   </p>
                   <p className="text-xs text-slate-400 flex items-center justify-end gap-1">
