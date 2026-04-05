@@ -51,9 +51,9 @@ Build an app for a club bucks system, which is a type of currency used within an
 - `transactions` - Transaction history
 - `login_attempts` - Brute force protection
 
-## What's Been Implemented (Jan 2026)
+## What's Been Implemented
 
-### Phase 1 (Complete)
+### Phase 1 (Complete - Jan 2026)
 - [x] JWT Authentication with httpOnly cookies
 - [x] Admin seeding on startup
 - [x] Member management (CRUD)
@@ -63,15 +63,22 @@ Build an app for a club bucks system, which is a type of currency used within an
 - [x] Dashboard with stats
 - [x] Leaderboard with podium view
 - [x] Scan Station for quick transactions
-- [x] 51 members imported from Excel data
 - [x] Role-based routing
 
-### Phase 2 (Complete)
+### Phase 2 (Complete - Jan 2026)
 - [x] Google OAuth integration via Emergent Auth
 - [x] Parent dashboard with child linking
 - [x] Bulk CSV import for members
 - [x] Edit member page with balance display
 - [x] Import CSV button on Members page
+
+### Phase 3 (Complete - Apr 2026)
+- [x] Staff management page (admin vs staff roles)
+- [x] Admin Settings page (app name, colors, theme)
+- [x] Export to CSV for Members and Transactions
+- [x] Scan Station manual entry with searchable dropdown
+- [x] Full Excel data import: 258 members from uploaded Excel file (clubbucks_pay_app_final_fixed)
+- [x] Existing member balances preserved during import (upsert logic)
 
 ## Prioritized Backlog
 
@@ -81,14 +88,17 @@ Build an app for a club bucks system, which is a type of currency used within an
 - Parent dashboard with child linking
 - CSV bulk import
 - Member editing
+- Staff management & admin settings
+- CSV/Excel export
+- Full Excel data import (258 members)
 
-### P1 - Future Enhancements
+### P1 - Next Up
 - Store/reward shop system
 - Achievement badges
-- Email notifications for parents
-- Transaction reports/exports
 
 ### P2 - Nice to Have
+- Transaction export pagination (performance)
+- Email notifications for parents
 - Multiple clubs support
 - Staff shift tracking
 - Points decay/expiration
