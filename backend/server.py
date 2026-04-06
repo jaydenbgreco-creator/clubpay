@@ -678,9 +678,15 @@ async def get_clubs(request: Request):
         else:
             clubs = []
     
-    # Add member count for each club
+    # Add member count for each club using aggregation (avoids N+1)
+    club_ids = [c["id"] for c in clubs]
+    counts = await db.members.aggregate([
+        {"$match": {"club_id": {"$in": club_ids}}},
+        {"$group": {"_id": "$club_id", "count": {"$sum": 1}}}
+    ]).to_list(100)
+    count_map = {c["_id"]: c["count"] for c in counts}
     for club in clubs:
-        club["member_count"] = await db.members.count_documents({"club_id": club["id"]})
+        club["member_count"] = count_map.get(club["id"], 0)
     
     return clubs
 
