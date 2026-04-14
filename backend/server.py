@@ -1386,7 +1386,7 @@ async def _seed_admin():
             logger.info("Admin password updated")
         await db.users.update_one({"email": admin_email}, {"$set": update_fields})
     
-    creds_path = Path("/app/memory/test_credentials.md")
+    creds_path = Path("/tmp/memory/test_credentials.md")
     creds_path.parent.mkdir(parents=True, exist_ok=True)
     creds_path.write_text(f"""# Test Credentials
 
