@@ -1297,15 +1297,11 @@ async def root():
 # Include router
 app.include_router(api_router)
 
-# CORS
-cors_origins = os.environ.get("CORS_ORIGINS", "*")
-if cors_origins == "*":
-    allow_origins = ["*"]
-else:
-    allow_origins = [origin.strip() for origin in cors_origins.split(",")]
-    # Always include localhost for development
-    if "http://localhost:3000" not in allow_origins:
-        allow_origins.append("http://localhost:3000")
+from fastapi.middleware.cors import CORSMiddleware
+
+allow_origins = [
+    "https://clubpay-njzo1mqov-jaydenbgreco-creators-projects.vercel.app"
+]
 
 app.add_middleware(
     CORSMiddleware,
