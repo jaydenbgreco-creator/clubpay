@@ -50,7 +50,7 @@ const LoginPage = () => {
           <h1 className="text-3xl font-black tracking-tight" style={{ fontFamily: 'Libre Franklin, sans-serif', color: '#004b87' }}>
             ClubPay
           </h1>
-          <p className="text-sm font-semibold mt-1" style={{ color: '#0080c6' }}>Digital Bucks</p>
+          <p className="text-sm font-semibold mt-1" style={{ color: '#0080c6' }}>Digital Club Bucks</p>
         </div>
 
         {/* Login Card */}
